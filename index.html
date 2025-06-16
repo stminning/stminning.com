@@ -198,6 +198,19 @@
   .profile-info {
     background: var(--card-bg);
     padding: 1rem;
+  }
+  
+  /* Package card styles */
+  .package-details {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.8rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+  
+  .package-details p {
+    margin-bottom: 0.5rem;
+  }
     border-radius: 10px;
     margin-bottom: 1rem;
   }
@@ -247,6 +260,76 @@
     font-weight: bold;
     box-shadow: 0 0 4px #00ff99;
     z-index: 1100;
+  }
+  
+  /* Document Management Styles */
+  .document-section {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 20px;
+    margin-top: 20px;
+  }
+  
+  .document-upload-card, .document-list-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    height: 100%;
+  }
+  
+  .document-item {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .document-item h6 {
+    margin-bottom: 5px;
+    color: #fff;
+  }
+  
+  .document-status {
+    padding: 3px 8px;
+    border-radius: 15px;
+    font-size: 0.8em;
+    font-weight: bold;
+  }
+  
+  .status-pending {
+    background: #ffc107;
+    color: #000;
+  }
+  
+  .status-verified {
+    background: #28a745;
+    color: #fff;
+  }
+  
+  .status-rejected {
+    background: #dc3545;
+    color: #fff;
+  }
+  
+  .document-actions {
+    margin-top: 10px;
+  }
+  
+  .document-actions button {
+    margin-right: 5px;
+    padding: 5px 10px;
+    font-size: 0.8em;
+  }
+  
+  .admin-note {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    padding: 8px;
+    margin-top: 8px;
+    font-size: 0.9em;
+    font-style: italic;
   }
   /* Transaction section styles */
   .table-dark {
@@ -627,7 +710,47 @@
       <p><strong>Total Earnings:</strong> <span id="profileTotalEarnings">$0.00</span></p>
       <p><strong>Verification Status:</strong> <span id="verificationStatus" data-user="verification">Not Verified</span></p>
     </div>
-    <button class="btn btn-primary w-100 mb-2" onclick="showVerificationPage()">Complete Verification</button>
+    
+    <!-- Document Upload Section -->
+    <div class="document-section mt-4">
+      <h4>Document Management</h4>
+      <div class="row">
+        <div class="col-md-6">
+          <div class="document-upload-card">
+            <h5>Upload Documents</h5>
+            <div class="mb-3">
+              <label for="documentType" class="form-label">Document Type</label>
+              <select class="form-select" id="documentType">
+                <option value="cnic_front">CNIC Front Side</option>
+                <option value="cnic_back">CNIC Back Side</option>
+                <option value="passport">Passport</option>
+                <option value="id_card">ID Card</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="documentFile" class="form-label">Choose File</label>
+              <input type="file" class="form-control" id="documentFile" accept=".jpg,.jpeg,.png,.pdf" onchange="previewDocument(this)">
+              <div class="form-text">Supported formats: JPG, PNG, PDF (Max 5MB)</div>
+            </div>
+            <div id="documentPreview" class="mb-3" style="display: none;">
+              <img id="previewImage" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
+            </div>
+            <button type="button" class="btn btn-primary" onclick="uploadDocument()">Upload Document</button>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="document-list-card">
+            <h5>My Documents</h5>
+            <div id="userDocumentsList">
+              <p class="text-muted">Loading documents...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <button class="btn btn-secondary w-100 mb-2 mt-3" onclick="showVerificationPage()">Complete Verification</button>
     <button class="back-btn" onclick="backToDashboard()">Back to Dashboard</button>
   </div>
 </div>
@@ -638,11 +761,11 @@
     <h3>Identity Verification</h3>
     <div class="verification-container">
       <div class="verification-option">
-        <h4>1. Upload ID Card</h4>
-        <p>Please upload a clear photo of your government-issued ID card (passport, driver's license, or national ID).</p>
+        <h4>1. Upload CNIC Card</h4>
+        <p>Please upload both sides of your CNIC (Computerized National Identity Card) for verification.</p>
         <div class="id-upload-area" id="idUploadFront" onclick="document.getElementById('idFrontInput').click()">
           <i class="material-icons">cloud_upload</i>
-          <p>Click to upload front side of ID</p>
+          <p>Click to upload front side of CNIC</p>
           <input type="file" id="idFrontInput" style="display: none;" accept="image/*" onchange="handleIdUpload(this, 'front')">
         </div>
         <div id="idFrontPreview" style="display: none; text-align: center; margin-top: 10px;">
@@ -652,7 +775,7 @@
         
         <div class="id-upload-area" id="idUploadBack" onclick="document.getElementById('idBackInput').click()">
           <i class="material-icons">cloud_upload</i>
-          <p>Click to upload back side of ID</p>
+          <p>Click to upload back side of CNIC</p>
           <input type="file" id="idBackInput" style="display: none;" accept="image/*" onchange="handleIdUpload(this, 'back')">
         </div>
         <div id="idBackPreview" style="display: none; text-align: center; margin-top: 10px;">
@@ -908,6 +1031,10 @@
         currentUser.daily_income = userData.daily_income;
         currentUser.total_withdrawn = userData.total_withdrawn;
         currentUser.password = userData.password; // For profile display
+        currentUser.cnic_front_url = userData.cnic_front_url;
+        currentUser.cnic_back_url = userData.cnic_back_url;
+        currentUser.cnic_verified = userData.cnic_verified;
+        currentUser.profile_image_url = userData.profile_image_url;
         
         // Save updated user back to localStorage
         localStorage.setItem('currentUser', JSON.stringify(currentUser));
@@ -923,8 +1050,89 @@
       // Also refresh transactions from database
       await loadTransactionsFromDB();
       
+      // Load active mining packages
+      await loadActiveMiningPackages();
+      
     } catch (error) {
       console.error('Exception in refreshUserData:', error);
+    }
+  }
+  
+  // Function to load active mining packages from Supabase
+  async function loadActiveMiningPackages() {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (!currentUser || !currentUser.id) return;
+    
+    try {
+      // Get mining packages from database
+      const { data: packages, error } = await supabase
+        .from('mining_packages')
+        .select(`
+          *,
+          package_types(*)
+        `)
+        .eq('user_id', currentUser.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+        
+      if (error) throw error;
+      
+      // Process active mining packages
+      if (packages && packages.length > 0) {
+        console.log('Found active mining package:', packages[0]);
+        
+        // For now, we'll handle the first active package
+        const pkg = packages[0];
+        
+        // Create package object
+        activePackage = {
+          id: pkg.id,
+          user_id: pkg.user_id,
+          pkg: {
+            amount: pkg.package_amount,
+            daily: pkg.daily_income
+          },
+          daysPassed: pkg.days_completed || 0,
+          startTime: new Date(pkg.started_at || pkg.created_at),
+          status: pkg.status,
+          progressBar: document.getElementById('miningProgressBar'),
+          miningStatus: document.getElementById('miningStatus')
+        };
+        
+        // Set up next mining click time
+        if (pkg.next_mining_click) {
+          nextMiningClickTime = new Date(pkg.next_mining_click);
+          localStorage.setItem('nextMiningClickTime', nextMiningClickTime.toString());
+        } else if (pkg.last_mining_click) {
+          // Set next click time to 24 hours after last click
+          nextMiningClickTime = new Date(new Date(pkg.last_mining_click).getTime() + 24 * 60 * 60 * 1000);
+          localStorage.setItem('nextMiningClickTime', nextMiningClickTime.toString());
+        }
+        
+        // Show mining status card
+        const miningStatusCard = document.getElementById('miningStatusCard');
+        miningStatusCard.classList.add('active');
+        
+        // Calculate progress
+        const startDate = new Date(pkg.started_at || pkg.created_at);
+        const currentDate = new Date();
+        const elapsedDays = (currentDate - startDate) / (1000 * 60 * 60 * 24);
+        
+        // Calculate progress percentage
+        const dayProgress = elapsedDays - Math.floor(elapsedDays);
+        const percent = ((activePackage.daysPassed + dayProgress) / 30) * 100;
+        
+        activePackage.progressBar.style.width = Math.min(percent, 100) + '%';
+        activePackage.miningStatus.textContent = `Day ${activePackage.daysPassed + 1} of 30 (${Math.round(percent)}%)`;
+        
+        // Update mining button based on next click time
+        updateMiningButton();
+      }
+      
+      console.log('✅ Mining packages loaded from database:', packages?.length || 0);
+      
+    } catch (error) {
+      console.error('Error loading mining packages:', error);
     }
   }
   
@@ -1013,8 +1221,14 @@
     checkAuthentication();
     initDashboard();
     
+    // Set up user session tracking
+    updateUserSession();
+    
     // Set up periodic refresh of user data (every 30 seconds)
     setInterval(refreshUserData, 30000);
+    
+    // Update user session every 5 minutes
+    setInterval(updateUserSession, 5 * 60 * 1000);
   });
   
   // Authentication check
@@ -1132,29 +1346,102 @@
     }, 2000); // Simulate verification time
   }
   
-  // ID Card and Selfie functions
-  function handleIdUpload(input, side) {
+  // CNIC Upload and Selfie functions
+  async function handleIdUpload(input, side) {
     if (input.files && input.files[0]) {
+      // Show loading spinner
+      showNotification('Uploading CNIC image...');
+      
+      const file = input.files[0];
       const reader = new FileReader();
       
-      reader.onload = function(e) {
-        if (side === 'front') {
-          // Use ID card image for front ID
-          document.getElementById('idFrontImage').src = e.target.result;
-          document.getElementById('idFrontPreview').style.display = 'block';
-          document.getElementById('idUploadFront').style.display = 'none';
-          idFrontUploaded = true;
-          idFrontData = e.target.result;
-        } else {
-          // Use ID card for back ID
-          document.getElementById('idBackImage').src = e.target.result;
-          document.getElementById('idBackPreview').style.display = 'block';
-          document.getElementById('idUploadBack').style.display = 'none';
-          idBackUploaded = true;
-          idBackData = e.target.result;
+      reader.onload = async function(e) {
+        try {
+          // First, upload to Supabase Storage
+          const fileName = `cnic_${side}_${Date.now()}.${file.name.split('.').pop()}`;
+          
+          // Upload to Supabase Storage
+          const { data, error } = await supabase.storage
+            .from('cnic-uploads')
+            .upload(`public/${currentUser.id}/${fileName}`, file, {
+              cacheControl: '3600',
+              upsert: true,
+            });
+            
+          if (error) {
+            console.error('Error uploading CNIC image:', error);
+            throw error;
+          }
+          
+          // Get public URL
+          const { data: urlData } = supabase.storage
+            .from('cnic-uploads')
+            .getPublicUrl(`public/${currentUser.id}/${fileName}`);
+            
+          const publicUrl = urlData.publicUrl;
+          
+          if (side === 'front') {
+            // Use CNIC image for front ID
+            document.getElementById('idFrontImage').src = e.target.result;
+            document.getElementById('idFrontPreview').style.display = 'block';
+            document.getElementById('idUploadFront').style.display = 'none';
+            idFrontUploaded = true;
+            idFrontData = e.target.result;
+            
+            // Update user's CNIC front URL in the database
+            const { error: updateError } = await supabase
+              .from('users')
+              .update({ cnic_front_url: publicUrl })
+              .eq('id', currentUser.id);
+              
+            if (updateError) {
+              console.error('Error updating user CNIC front URL:', updateError);
+            } else {
+              console.log('CNIC front URL updated successfully');
+            }
+          } else {
+            // Use CNIC for back ID
+            document.getElementById('idBackImage').src = e.target.result;
+            document.getElementById('idBackPreview').style.display = 'block';
+            document.getElementById('idUploadBack').style.display = 'none';
+            idBackUploaded = true;
+            idBackData = e.target.result;
+            
+            // Update user's CNIC back URL in the database
+            const { error: updateError } = await supabase
+              .from('users')
+              .update({ cnic_back_url: publicUrl })
+              .eq('id', currentUser.id);
+              
+            if (updateError) {
+              console.error('Error updating user CNIC back URL:', updateError);
+            } else {
+              console.log('CNIC back URL updated successfully');
+            }
+          }
+          
+          showNotification('CNIC image uploaded successfully');
+          checkVerificationStatus();
+          
+        } catch (error) {
+          console.error('CNIC upload error:', error);
+          showNotification('Error uploading CNIC image. Please try again.');
+          
+          // Still show the image locally as fallback
+          if (side === 'front') {
+            document.getElementById('idFrontImage').src = e.target.result;
+            document.getElementById('idFrontPreview').style.display = 'block';
+            document.getElementById('idUploadFront').style.display = 'none';
+            idFrontUploaded = true;
+            idFrontData = e.target.result;
+          } else {
+            document.getElementById('idBackImage').src = e.target.result;
+            document.getElementById('idBackPreview').style.display = 'block';
+            document.getElementById('idUploadBack').style.display = 'none';
+            idBackUploaded = true;
+            idBackData = e.target.result;
+          }
         }
-        
-        checkVerificationStatus();
       };
       
       reader.readAsDataURL(input.files[0]);
@@ -1691,6 +1978,213 @@ Please review the submitted documents and update the user's verification status 
     // Notify user but don't add to balance until manually approved
     showNotification(`💰 Deposit request for $${amount} submitted successfully! Transaction ID: ${transactionId}`);
   }
+  
+  // Document Management Functions
+  function previewDocument(input) {
+    const file = input.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        alert('File size must be less than 5MB');
+        input.value = '';
+        return;
+      }
+      
+      const preview = document.getElementById('documentPreview');
+      const previewImage = document.getElementById('previewImage');
+      
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          previewImage.src = e.target.result;
+          preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      } else if (file.type === 'application/pdf') {
+        previewImage.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTggMTJINVY5SDhWMTJaTTggMTVINVYxM0g4VjE1WiIgZmlsbD0iIzAwZmY5OSIvPgo8cGF0aCBkPSJNMTQgNUg2QzQuOSA1IDQgNS45IDQgN1YxN0M0IDE4LjEgNC45IDE5IDYgMTlIMThDMTkuMSAxOSAyMCAxOC4xIDIwIDE3VjlMMTQgNVpNMTggMTdINlY3SDEzVjEwSDE4VjE3WiIgZmlsbD0iIzAwZmY5OSIvPgo8L3N2Zz4K';
+        preview.style.display = 'block';
+      }
+    }
+  }
+  
+  async function uploadDocument() {
+    const fileInput = document.getElementById('documentFile');
+    const typeSelect = document.getElementById('documentType');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+      alert('Please select a file to upload');
+      return;
+    }
+    
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (!currentUser || !currentUser.id) {
+      alert('Please log in to upload documents');
+      return;
+    }
+    
+    try {
+      showNotification('Uploading document...');
+      
+      // Create unique filename
+      const timestamp = Date.now();
+      const fileExtension = file.name.split('.').pop();
+      const fileName = `${currentUser.id}_${typeSelect.value}_${timestamp}.${fileExtension}`;
+      const filePath = `documents/${fileName}`;
+      
+      // Upload file to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(filePath, file);
+        
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw new Error('Failed to upload file: ' + uploadError.message);
+      }
+      
+      // Save document metadata to database
+      const { data: docData, error: docError } = await supabase
+        .from('documents')
+        .insert([{
+          user_id: currentUser.id,
+          document_type: typeSelect.value,
+          file_name: file.name,
+          file_path: filePath,
+          file_size: file.size,
+          mime_type: file.type,
+          status: 'pending'
+        }])
+        .select();
+        
+      if (docError) {
+        console.error('Database error:', docError);
+        throw new Error('Failed to save document metadata: ' + docError.message);
+      }
+      
+      showNotification('Document uploaded successfully!');
+      
+      // Clear form
+      fileInput.value = '';
+      document.getElementById('documentPreview').style.display = 'none';
+      
+      // Reload documents list
+      loadUserDocuments();
+      
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      showNotification('Error uploading document: ' + error.message);
+    }
+  }
+  
+  async function loadUserDocuments() {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (!currentUser || !currentUser.id) return;
+    
+    try {
+      const { data: documents, error } = await supabase
+        .from('documents')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: false });
+        
+      if (error) throw error;
+      
+      const documentsList = document.getElementById('userDocumentsList');
+      
+      if (documents && documents.length > 0) {
+        documentsList.innerHTML = documents.map(doc => `
+          <div class="document-item">
+            <h6>${formatDocumentType(doc.document_type)}</h6>
+            <p><strong>File:</strong> ${doc.file_name}</p>
+            <p><strong>Status:</strong> <span class="document-status status-${doc.status}">${doc.status.toUpperCase()}</span></p>
+            <p><strong>Uploaded:</strong> ${new Date(doc.created_at).toLocaleDateString()}</p>
+            ${doc.admin_note ? `<div class="admin-note"><strong>Admin Note:</strong> ${doc.admin_note}</div>` : ''}
+            <div class="document-actions">
+              <button class="btn btn-sm btn-primary" onclick="downloadDocument('${doc.file_path}', '${doc.file_name}')">Download</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteDocument('${doc.id}')">Delete</button>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        documentsList.innerHTML = '<p class="text-muted">No documents uploaded yet.</p>';
+      }
+      
+    } catch (error) {
+      console.error('Error loading documents:', error);
+      document.getElementById('userDocumentsList').innerHTML = '<p class="text-danger">Error loading documents.</p>';
+    }
+  }
+  
+  function formatDocumentType(type) {
+    const types = {
+      'cnic_front': 'CNIC Front Side',
+      'cnic_back': 'CNIC Back Side',
+      'passport': 'Passport',
+      'id_card': 'ID Card',
+      'other': 'Other Document'
+    };
+    return types[type] || type;
+  }
+  
+  async function downloadDocument(filePath, fileName) {
+    try {
+      const { data, error } = await supabase.storage
+        .from('documents')
+        .download(filePath);
+        
+      if (error) throw error;
+      
+      // Create download link
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      showNotification('Error downloading document');
+    }
+  }
+  
+  async function deleteDocument(documentId) {
+    if (!confirm('Are you sure you want to delete this document?')) return;
+    
+    try {
+      // Get document info first
+      const { data: doc, error: fetchError } = await supabase
+        .from('documents')
+        .select('file_path')
+        .eq('id', documentId)
+        .single();
+        
+      if (fetchError) throw fetchError;
+      
+      // Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from('documents')
+        .remove([doc.file_path]);
+        
+      if (storageError) console.error('Storage deletion error:', storageError);
+      
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from('documents')
+        .delete()
+        .eq('id', documentId);
+        
+      if (dbError) throw dbError;
+      
+      showNotification('Document deleted successfully');
+      loadUserDocuments();
+      
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      showNotification('Error deleting document');
+    }
+  }
 
   // Sidebar toggle
   function toggleSidebar() {
@@ -1732,6 +2226,7 @@ Please review the submitted documents and update the user's verification status 
     hideAllSections();
     document.getElementById('profilePage').style.display = 'block';
     updateProfileInfo();
+    loadUserDocuments();
   }
 
   function showSettingsPage() {
@@ -1824,6 +2319,7 @@ Please review the submitted documents and update the user's verification status 
       const { data, error } = await supabase
         .from('package_types')
         .select('*')
+        .eq('status', 'active') // Only show active packages to users
         .order('amount', { ascending: true });
         
       if (error) {
@@ -1833,9 +2329,12 @@ Please review the submitted documents and update the user's verification status 
       
       if (data && data.length > 0) {
         packages = data.map(pkg => ({
+          id: pkg.id,
           amount: parseFloat(pkg.amount),
           daily: parseFloat(pkg.daily_income),
-          description: pkg.description
+          title: pkg.title,
+          description: pkg.description,
+          duration: pkg.duration_days || 30
         }));
         
         // Recreate package cards with the new data
@@ -1844,9 +2343,96 @@ Please review the submitted documents and update the user's verification status 
           const card = createPackageCard(pkg, i);
           container.appendChild(card);
         });
+        
+        // Restore package state after cards are created
+        await restorePackageState();
+      } else {
+        // No active packages
+        container.innerHTML = '<div class="col-12 text-center"><p>No active packages available at the moment. Please check back later.</p></div>';
       }
     } catch (error) {
       console.error('Error in loadPackageTypes:', error);
+    }
+  }
+  
+  // Function to restore package state from database
+  async function restorePackageState() {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (!currentUser || !currentUser.id) return;
+    
+    try {
+      // Get active mining packages from database
+      const { data: activePkg, error } = await supabase
+        .from('mining_packages')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .in('status', ['inactive', 'active'])
+        .order('created_at', { ascending: false })
+        .limit(1);
+        
+      if (error) throw error;
+      
+      if (activePkg && activePkg.length > 0) {
+        const dbPackage = activePkg[0];
+        console.log('Restoring package state:', dbPackage);
+        
+        // Find matching package card
+        const matchingPackageIndex = packages.findIndex(pkg => 
+          pkg.amount === parseFloat(dbPackage.package_amount)
+        );
+        
+        if (matchingPackageIndex !== -1) {
+          const card = container.children[matchingPackageIndex];
+          const activateBtn = card.querySelector('.activate-btn');
+          const packageCard = card.querySelector('.package-card');
+          
+          // Create activePackage object
+          activePackage = {
+            id: dbPackage.id,
+            pkg: packages[matchingPackageIndex],
+            card: card,
+            daysPassed: dbPackage.days_completed || 0,
+            progressBar: card.querySelector('.progress-bar'),
+            miningStatus: card.querySelector('.mining-status'),
+            startTime: new Date(dbPackage.started_at || dbPackage.created_at),
+            status: dbPackage.status
+          };
+          
+          // Update UI based on package status
+          if (dbPackage.status === 'inactive') {
+            // Package is activated but not started
+            activateBtn.textContent = 'Start Mining';
+            packageCard.classList.add('active');
+            activePackage.miningStatus.textContent = 'Ready to start mining';
+            
+          } else if (dbPackage.status === 'active') {
+            // Package is actively mining
+            activateBtn.textContent = 'Cancel';
+            packageCard.classList.add('active');
+            
+            // Set up next mining click time
+            if (dbPackage.next_mining_click) {
+              nextMiningClickTime = new Date(dbPackage.next_mining_click);
+              localStorage.setItem('nextMiningClickTime', nextMiningClickTime.toString());
+            }
+            
+            // Show mining status card
+            const miningStatusCard = document.getElementById('miningStatusCard');
+            miningStatusCard.classList.add('active');
+            
+            // Calculate and display progress
+            updateMiningProgress();
+            updateMiningButton();
+            
+            activePackage.miningStatus.textContent = 'Mining in progress...';
+          }
+          
+          console.log('Package state restored successfully');
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error restoring package state:', error);
     }
   }
 
@@ -1911,14 +2497,79 @@ Please review the submitted documents and update the user's verification status 
     }, 10);
   }
 
+  // Create mining package in Supabase
+  async function createMiningPackage(pkg) {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (!currentUser || !currentUser.id) return;
+    
+    try {
+      // Get the latest package data from the database to ensure it's current
+      const { data: packageData, error: pkgError } = await supabase
+        .from('package_types')
+        .select('*')
+        .eq('id', pkg.id)
+        .single();
+        
+      if (pkgError) {
+        console.error('Error fetching latest package data:', pkgError);
+        // Continue with local data if there's an error
+      }
+      
+      // Use the latest package data from database if available, otherwise use local pkg data
+      const packageAmount = packageData?.amount || pkg.amount;
+      const dailyIncome = packageData?.daily_income || pkg.daily;
+      const duration = packageData?.duration_days || pkg.duration || 30;
+      
+      // Create the mining package record
+      const { data, error } = await supabase
+        .from('mining_packages')
+        .insert([{
+          user_id: currentUser.id,
+          package_amount: packageAmount,
+          daily_income: dailyIncome,
+          package_type_id: pkg.id,
+          status: 'inactive',
+          days_completed: 0,
+          progress_percentage: 0,
+          total_days: duration,
+          created_at: new Date().toISOString()
+        }])
+        .select();
+        
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        // Update activePackage with database ID and ensure data is current
+        activePackage.id = data[0].id;
+        activePackage.pkg.amount = packageAmount;
+        activePackage.pkg.daily = dailyIncome;
+        activePackage.pkg.duration = duration;
+        console.log('Mining package created in database with ID:', activePackage.id);
+      }
+    } catch (error) {
+      console.error('Error creating mining package:', error);
+    }
+  }
+  
   // Create package cards
   function createPackageCard(pkg, index) {
     const card = document.createElement('div');
     card.className = 'col-md-4';
+    
+    // Calculate ROI and total earnings
+    const totalEarnings = (pkg.daily * pkg.duration).toFixed(2);
+    const roi = ((pkg.daily * pkg.duration / pkg.amount) * 100).toFixed(1);
+    
     card.innerHTML = `
       <div class="package-card" id="package-${index}">
-        <h4>Package $${pkg.amount}</h4>
-        <p>Daily Income: $${pkg.daily}</p>
+        <h4>${pkg.title || `Package $${pkg.amount}`}</h4>
+        <div class="package-details">
+          <p><strong>Investment:</strong> $${pkg.amount.toFixed(2)}</p>
+          <p><strong>Daily Income:</strong> $${pkg.daily.toFixed(2)}</p>
+          <p><strong>Duration:</strong> ${pkg.duration} days</p>
+          <p><strong>Total Earnings:</strong> $${totalEarnings}</p>
+          <p><strong>ROI:</strong> ${roi}%</p>
+        </div>
         <div class="package-controls">
           <button class="btn btn-warning activate-btn">Activate</button>
         </div>
@@ -1940,7 +2591,7 @@ Please review the submitted documents and update the user's verification status 
       // Show loading spinner for 3 seconds
       document.getElementById('loadingSpinner').style.display = 'block';
       
-      setTimeout(() => {
+      setTimeout(async () => {
         document.getElementById('loadingSpinner').style.display = 'none';
         
         if (!activePackage) {
@@ -1957,17 +2608,43 @@ Please review the submitted documents and update the user's verification status 
               miningStatus: card.querySelector('.mining-status'),
               miningInterval: null
             };
+            
+            // Create mining package in Supabase
+            await createMiningPackage(pkg);
             card.querySelector('.package-card').classList.add('active');
+            
+            // Update user balance in Supabase
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (currentUser && currentUser.id) {
+              try {
+                await supabase
+                  .from('users')
+                  .update({ 
+                    balance: userBalance,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('id', currentUser.id);
+                  
+                // Update localStorage
+                currentUser.balance = userBalance;
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+              } catch (error) {
+                console.error('Error updating user balance:', error);
+              }
+            }
+            
+            // Update the mining status text
+            activePackage.miningStatus.textContent = 'Ready to start mining';
           } else {
             alert('Insufficient balance to activate this package.');
           }
         } else if (activateBtn.textContent === 'Start Mining') {
           // Start mining
-          startMining();
+          await startMining();
           activateBtn.textContent = 'Cancel';
         } else if (activateBtn.textContent === 'Cancel') {
           // Cancel mining
-          cancelMining();
+          await cancelMining();
         }
       }, 3000);
     };
@@ -1976,12 +2653,35 @@ Please review the submitted documents and update the user's verification status 
   }
 
   // Mining simulation (need to click every 24 hours)
-  function startMining() {
+  async function startMining() {
     if (!activePackage) return;
     
     // Set start time
     activePackage.startTime = new Date();
     activePackage.miningStatus.textContent = 'Mining in progress...';
+    
+    // Get the duration from the package type
+    const duration = activePackage.pkg.duration || 30;
+    
+    // Update mining package in Supabase
+    if (activePackage.id) {
+      try {
+        await supabase
+          .from('mining_packages')
+          .update({
+            status: 'active',
+            started_at: activePackage.startTime.toISOString(),
+            last_mining_click: new Date().toISOString(),
+            next_mining_click: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+            total_days: duration // Use the duration from package type
+          })
+          .eq('id', activePackage.id);
+          
+        console.log('Mining package started and updated in database');
+      } catch (error) {
+        console.error('Error updating mining package:', error);
+      }
+    }
     
     // Set next mining click time (24 hours from now)
     nextMiningClickTime = new Date(activePackage.startTime.getTime() + 24 * 60 * 60 * 1000);
@@ -1994,7 +2694,8 @@ Please review the submitted documents and update the user's verification status 
     
     showNotification('Mining started. You need to click "Continue Mining" every 24 hours.');
     
-    // Calculate progress
+    // Calculate progress - use the package duration from the database
+    activePackage.totalDays = activePackage.pkg.duration || 30; // Use package duration
     updateMiningProgress();
   }
   
@@ -2029,13 +2730,14 @@ Please review the submitted documents and update the user's verification status 
     }
     
     // Calculate progress percentage (for current day)
+    const totalDays = activePackage.totalDays || 30; // Use package-specific duration
     const dayProgress = elapsedDays - Math.floor(elapsedDays);
-    const percent = ((activePackage.daysPassed + dayProgress) / 30) * 100;
+    const percent = ((activePackage.daysPassed + dayProgress) / totalDays) * 100;
     
     activePackage.progressBar.style.width = Math.min(percent, 100) + '%';
-    activePackage.miningStatus.textContent = `Day ${activePackage.daysPassed + 1} of 30 (${Math.round(percent)}%)`;
+    activePackage.miningStatus.textContent = `Day ${activePackage.daysPassed + 1} of ${totalDays} (${Math.round(percent)}%)`;
     
-    if (elapsedDays >= 30) {
+    if (elapsedDays >= totalDays) {
       // Mining complete
       completeMining();
     }
@@ -2081,6 +2783,45 @@ Please review the submitted documents and update the user's verification status 
     }
   }
   
+  // Update the user's session token and last active timestamp
+  async function updateUserSession() {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (!currentUser || !currentUser.id) return;
+    
+    try {
+      // Generate a session token if one doesn't exist
+      const sessionToken = currentUser.session_token || generateSessionToken();
+      
+      // Update the session in the database
+      const { error } = await supabase
+        .from('user_settings')
+        .upsert({
+          user_id: currentUser.id,
+          session_token: sessionToken,
+          last_active: new Date().toISOString(),
+          session_expiry: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours from now
+        }, {
+          onConflict: 'user_id'
+        });
+        
+      if (error) throw error;
+      
+      // Update localStorage with the session token
+      currentUser.session_token = sessionToken;
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      
+      console.log('User session updated successfully');
+    } catch (error) {
+      console.error('Error updating user session:', error);
+    }
+  }
+  
+  // Generate a random session token
+  function generateSessionToken() {
+    return Math.random().toString(36).substring(2, 15) + 
+           Math.random().toString(36).substring(2, 15);
+  }
+  
   // Continue mining (24-hour click)
   continueMiningBtn.addEventListener('click', function() {
     if (!activePackage) return;
@@ -2088,7 +2829,7 @@ Please review the submitted documents and update the user's verification status 
     // Show loading spinner
     document.getElementById('loadingSpinner').style.display = 'block';
     
-    setTimeout(() => {
+    setTimeout(async () => {
       document.getElementById('loadingSpinner').style.display = 'none';
       
       // Add daily reward
@@ -2099,6 +2840,24 @@ Please review the submitted documents and update the user's verification status 
       nextMiningClickTime = new Date(new Date().getTime() + 24 * 60 * 60 * 1000);
       localStorage.setItem('nextMiningClickTime', nextMiningClickTime.toString());
       
+      // Update mining package in database
+      if (activePackage.id) {
+        try {
+          await supabase
+            .from('mining_packages')
+            .update({
+              last_mining_click: new Date().toISOString(),
+              next_mining_click: nextMiningClickTime.toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', activePackage.id);
+            
+          console.log('Mining click recorded in database');
+        } catch (error) {
+          console.error('Error updating mining click:', error);
+        }
+      }
+      
       // Update UI
       updateMiningButton();
       updateMiningProgress();
@@ -2107,12 +2866,31 @@ Please review the submitted documents and update the user's verification status 
     }, 3000);
   });
   
-  function completeMining() {
+  async function completeMining() {
     if (!activePackage) return;
     
     clearInterval(activePackage.miningInterval);
     activePackage.miningStatus.textContent = 'Package mining completed!';
     activePackage.progressBar.style.width = '100%';
+    
+    // Update mining package in database as completed
+    if (activePackage.id) {
+      try {
+        await supabase
+          .from('mining_packages')
+          .update({
+            status: 'completed',
+            progress_percentage: 100,
+            completed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', activePackage.id);
+          
+        console.log('Mining package marked as completed in database');
+      } catch (error) {
+        console.error('Error completing mining package:', error);
+      }
+    }
     
     // Reset mining status
     miningStatusCard.style.display = 'none';
@@ -2126,7 +2904,7 @@ Please review the submitted documents and update the user's verification status 
     activePackage = null;
   }
 
-  function cancelMining() {
+  async function cancelMining() {
     if (!activePackage) return;
     
     // Apply 5% cancellation fee
@@ -2136,7 +2914,65 @@ Please review the submitted documents and update the user's verification status 
     userBalance += refundAmount;
     updateSummary();
     
-    // Add transaction for cancellation fee
+    // Get current user
+    const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {};
+    if (!currentUser.id) {
+      console.error('No user ID found for cancellation');
+      return;
+    }
+    
+    // Update mining package in Supabase
+    if (activePackage.id) {
+      try {
+        await supabase
+          .from('mining_packages')
+          .update({
+            status: 'cancelled',
+            completed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', activePackage.id);
+          
+        console.log('Mining package cancelled in database');
+        
+        // Create a cancellation transaction in Supabase
+        const { error: transactionError } = await supabase
+          .from('transactions')
+          .insert([{
+            user_id: currentUser.id,
+            amount: refundAmount,
+            method: 'System',
+            transaction_type: 'refund',
+            status: 'completed',
+            reference_id: `cancel-${activePackage.id}`,
+            created_at: new Date().toISOString()
+          }]);
+          
+        if (transactionError) {
+          console.error('Error creating cancellation transaction:', transactionError);
+        } else {
+          console.log('Cancellation transaction created in database');
+        }
+        
+        // Update user balance in Supabase
+        const { error: userError } = await supabase
+          .from('users')
+          .update({
+            balance: userBalance,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', currentUser.id);
+          
+        if (userError) {
+          console.error('Error updating user balance:', userError);
+        }
+        
+      } catch (error) {
+        console.error('Error during cancellation process:', error);
+      }
+    }
+    
+    // Add transaction for cancellation fee (for localStorage compatibility)
     const transaction = {
       date: new Date().toLocaleString(),
       amount: cancellationFee.toFixed(2),
@@ -2145,19 +2981,16 @@ Please review the submitted documents and update the user's verification status 
       type: 'Fee'
     };
     
-    // Get current user
-    const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {};
-    
-    // Add transaction to user's transactions
+    // Add transaction to user's transactions in localStorage
     if (!currentUser.transactions) {
       currentUser.transactions = [];
     }
     currentUser.transactions.push(transaction);
     
-    // Save updated user
+    // Save updated user to localStorage
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
     
-    // Also update in users array
+    // Also update in users array for localStorage compatibility
     const users = JSON.parse(localStorage.getItem('users') || '[]');
     const userIndex = users.findIndex(u => u.id === currentUser.id);
     if (userIndex !== -1) {
@@ -2259,7 +3092,7 @@ Please review the submitted documents and update the user's verification status 
     // Refresh user data from database first
     await refreshUserData();
     
-    // Load package types from database
+    // Load package types from database (this will also restore package state)
     await loadPackageTypes();
     
     // Load user data from refreshed session data
@@ -2269,15 +3102,6 @@ Please review the submitted documents and update the user's verification status 
       dailyIncome = parseFloat(refreshedUser.daily_income) || 0;
       totalWithdrawn = parseFloat(refreshedUser.total_withdrawn) || 0;
     }
-    
-    // Username and email are already updated in refreshUserData function
-    
-    // Create package cards
-    container.innerHTML = '';
-    packages.forEach((pkg, i) => {
-      const card = createPackageCard(pkg, i);
-      container.appendChild(card);
-    });
     
     updateSummary();
     initSettings();
